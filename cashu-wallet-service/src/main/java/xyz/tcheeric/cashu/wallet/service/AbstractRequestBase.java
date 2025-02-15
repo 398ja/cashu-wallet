@@ -1,16 +1,11 @@
 package xyz.tcheeric.cashu.wallet.service;
 
-import cashu.util.Configuration;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
 
 @SuppressWarnings("ALL")
 @Getter
