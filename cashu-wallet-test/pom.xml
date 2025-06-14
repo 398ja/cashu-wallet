@@ -26,11 +26,5 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>cashu-java</groupId>
-            <artifactId>cashu-mint-admin</artifactId>
-            <version>0.1-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>
