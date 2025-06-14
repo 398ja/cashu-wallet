@@ -1,15 +1,15 @@
 package xyz.tcheeric.cashu.wallet.proto.tasks;
 
-import xyz.tcheeric.cashu.common.annotation.Nut;
-import xyz.tcheeric.cashu.common.model.BlindSignature;
-import xyz.tcheeric.cashu.common.model.Proof;
-import xyz.tcheeric.cashu.common.model.PublicKey;
-import xyz.tcheeric.cashu.common.model.Secret;
-import xyz.tcheeric.cashu.common.util.Task;
-import xyz.tcheeric.cashu.wallet.proto.nut.NUT04;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
 import lombok.extern.java.Log;
+import xyz.tcheeric.cashu.common.BlindSignature;
+import xyz.tcheeric.cashu.common.Proof;
+import xyz.tcheeric.cashu.common.PublicKey;
+import xyz.tcheeric.cashu.common.Secret;
+import xyz.tcheeric.cashu.common.util.Task;
+import xyz.tcheeric.cashu.entities.annotation.Nut;
+import xyz.tcheeric.cashu.wallet.proto.nut.NUT04;
 
 import java.math.BigInteger;
 

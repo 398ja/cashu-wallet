@@ -2,10 +2,10 @@ package xyz.tcheeric.cashu.wallet.service;
 
 import lombok.NonNull;
 import org.springframework.stereotype.Service;
-import xyz.tcheeric.cashu.common.annotation.Nut;
-import xyz.tcheeric.cashu.common.model.PaymentMethod;
-import xyz.tcheeric.cashu.common.model.rest.PostMeltQuoteRequest;
-import xyz.tcheeric.cashu.common.model.rest.PostMeltQuoteResponse;
+import xyz.tcheeric.cashu.common.PaymentMethod;
+import xyz.tcheeric.cashu.entities.annotation.Nut;
+import xyz.tcheeric.cashu.entities.rest.PostMeltQuoteRequest;
+import xyz.tcheeric.cashu.entities.rest.PostMeltQuoteResponse;
 
 @Nut(5)
 @Service

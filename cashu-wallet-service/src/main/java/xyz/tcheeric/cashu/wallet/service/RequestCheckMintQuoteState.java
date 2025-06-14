@@ -2,8 +2,8 @@ package xyz.tcheeric.cashu.wallet.service;
 
 import lombok.NonNull;
 import org.springframework.stereotype.Service;
-import xyz.tcheeric.cashu.common.annotation.Nut;
-import xyz.tcheeric.cashu.common.model.rest.PostMintQuoteResponse;
+import xyz.tcheeric.cashu.entities.annotation.Nut;
+import xyz.tcheeric.cashu.entities.rest.PostMintQuoteResponse;
 
 @Nut(4)
 @Service
