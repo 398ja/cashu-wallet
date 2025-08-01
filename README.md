@@ -21,4 +21,6 @@ The project uses Java 21 and Maven.  Run tests with:
 mvn -q verify
 ```
 
+This will also generate code coverage reports using JaCoCo in `target/site/jacoco` for each module.
+
 Note that the build requires additional Cashu libraries which are not included in this repository.
