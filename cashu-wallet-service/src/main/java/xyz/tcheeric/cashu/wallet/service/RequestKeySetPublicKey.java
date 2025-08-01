@@ -1,12 +1,10 @@
 package xyz.tcheeric.cashu.wallet.service;
 
 import lombok.NonNull;
-import org.springframework.stereotype.Service;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
 import xyz.tcheeric.cashu.entities.rest.GetKeySetsResponse;
 
 @Nut(1)
-@Service
 public class RequestKeySetPublicKey extends AbstractRequestBase<GetKeySetsResponse, Void> {
 
     public RequestKeySetPublicKey(@NonNull String baseUrl) {

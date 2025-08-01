@@ -4,12 +4,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @SuppressWarnings("ALL")
 @Getter
-@Service
 @Log
 public abstract class AbstractRequestBase<T, U> {
 
