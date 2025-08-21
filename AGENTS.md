@@ -43,6 +43,7 @@ The Cashu protocol is defined in the NUT specifications maintained at [cashubtc/
 - Add integration tests for new features to verify end-to-end functionality.
 - Ensure new dependencies or configurations do not introduce security vulnerabilities.
 - Maintain the versions in the configuration section of the pom.xml files.
+- Add a comment on top of every test method to describe the test in plain English.
 
 ## Pull Requests
 
