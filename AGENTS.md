@@ -1,6 +1,7 @@
 # Repo Guidelines
 
 The Cashu protocol is defined in the NUT specifications maintained at [cashubtc/nuts](https://github.com/cashubtc/nuts):
+- When implementing features, consult the NUT specifications:
 
 - [NUT-00](https://github.com/cashubtc/nuts/blob/main/00.md)
 - [NUT-01](https://github.com/cashubtc/nuts/blob/main/01.md)
@@ -50,3 +51,4 @@ The Cashu protocol is defined in the NUT specifications maintained at [cashubtc/
 - Include any limitations or known issues in the description.
 - Add a "Network Access" section summarizing blocked domains if network requests were denied.
 - Ensure all new features, modules, or dependencies are properly documented in the `README.md` file.
+- Ensure all new features are compliant with the API specification provided above.
