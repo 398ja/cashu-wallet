@@ -11,7 +11,7 @@
     <url>http://maven.apache.org</url>
     <modules>
         <module>cashu-wallet-protocol</module>
-        <module>cashu-wallet-service</module>
+        <module>cashu-wallet-client</module>
     </modules>
 
     <distributionManagement>

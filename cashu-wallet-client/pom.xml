@@ -7,7 +7,7 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>cashu-wallet-service</artifactId>
+    <artifactId>cashu-wallet-client</artifactId>
     <packaging>jar</packaging>
 
     <name>cashu-wallet-service</name>
