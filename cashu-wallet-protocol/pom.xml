@@ -39,17 +39,17 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>cashu-lib-common</artifactId>
-            <version>${project.version}</version>
+            <version>${cashu-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>cashu-lib-entities</artifactId>
-            <version>${project.version}</version>
+            <version>${cashu-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>cashu-lib-crypto</artifactId>
-            <version>${project.version}</version>
+            <version>${cashu-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

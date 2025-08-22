@@ -10,7 +10,7 @@
     <artifactId>cashu-wallet-client</artifactId>
     <packaging>jar</packaging>
 
-    <name>cashu-wallet-service</name>
+    <name>cashu-wallet-client</name>
     <url>http://maven.apache.org</url>
 
     <distributionManagement>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>cashu-lib-common</artifactId>
-            <version>${project.version}</version>
+            <version>${cashu-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
