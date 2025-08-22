@@ -1,8 +1,9 @@
-package xyz.tcheeric.cashu.wallet.service;
+package xyz.tcheeric.cashu.wallet.client.impl;
 
 import lombok.NonNull;
 import xyz.tcheeric.cashu.entities.rest.PostCheckStateRequest;
 import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
+import xyz.tcheeric.cashu.wallet.client.AbstractRequestBase;
 
 public class RequestCheckState extends AbstractRequestBase<PostCheckStateResponse, PostCheckStateRequest> {
 

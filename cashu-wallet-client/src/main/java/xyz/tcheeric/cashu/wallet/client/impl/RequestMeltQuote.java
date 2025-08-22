@@ -1,10 +1,11 @@
-package xyz.tcheeric.cashu.wallet.service;
+package xyz.tcheeric.cashu.wallet.client.impl;
 
 import lombok.NonNull;
 import xyz.tcheeric.cashu.common.PaymentMethod;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
 import xyz.tcheeric.cashu.entities.rest.PostMeltQuoteRequest;
 import xyz.tcheeric.cashu.entities.rest.PostMeltQuoteResponse;
+import xyz.tcheeric.cashu.wallet.client.AbstractRequestBase;
 
 @Nut(5)
 public class RequestMeltQuote extends AbstractRequestBase<PostMeltQuoteResponse, PostMeltQuoteRequest> {

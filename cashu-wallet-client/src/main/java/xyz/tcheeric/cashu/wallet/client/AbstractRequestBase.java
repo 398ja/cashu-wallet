@@ -1,4 +1,4 @@
-package xyz.tcheeric.cashu.wallet.service;
+package xyz.tcheeric.cashu.wallet.client;
 
 import lombok.Getter;
 import lombok.NonNull;

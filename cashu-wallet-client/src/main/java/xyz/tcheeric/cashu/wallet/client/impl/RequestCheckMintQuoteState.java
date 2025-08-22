@@ -1,8 +1,9 @@
-package xyz.tcheeric.cashu.wallet.service;
+package xyz.tcheeric.cashu.wallet.client.impl;
 
 import lombok.NonNull;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
 import xyz.tcheeric.cashu.entities.rest.PostMintQuoteResponse;
+import xyz.tcheeric.cashu.wallet.client.AbstractRequestBase;
 
 @Nut(4)
 public class RequestCheckMintQuoteState extends AbstractRequestBase<PostMintQuoteResponse, Void> {

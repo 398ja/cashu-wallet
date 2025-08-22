@@ -1,9 +1,10 @@
-package xyz.tcheeric.cashu.wallet.service;
+package xyz.tcheeric.cashu.wallet.client.impl;
 
 import lombok.NonNull;
 import xyz.tcheeric.cashu.common.Secret;
 import xyz.tcheeric.cashu.entities.rest.PostSwapRequest;
 import xyz.tcheeric.cashu.entities.rest.PostSwapResponse;
+import xyz.tcheeric.cashu.wallet.client.AbstractRequestBase;
 
 public class RequestSwapToken<T extends Secret> extends AbstractRequestBase<PostSwapResponse, PostSwapRequest> {
 
