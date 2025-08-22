@@ -47,7 +47,7 @@ The Cashu protocol is defined in the NUT specifications maintained at [cashubtc/
 
 ## Pull Requests
 
-- Always follow the [PR submission guidelines](https://docs.github.com/en/pull-requests) and use the [PR template](.github/pull_request_template.md) for every pull request.
+- Always follow the repository's PR submission guidelines and use the PR template located at `.github/pull_request_template.md`.
 - Summarize the changes made and describe how they were tested.
 - Include any limitations or known issues in the description.
 - Add a "Network Access" section summarizing blocked domains if network requests were denied.
