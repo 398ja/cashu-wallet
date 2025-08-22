@@ -37,6 +37,6 @@ public class UnblindSignatureTask<T extends Secret> implements Task<Proof<T>> {
     public Proof<T> execute() {
         Signature C_ = blindSignature.getBlindedSignature();
         byte[] C = utilsService.unblindSignature(C_.getBytes(), Utils.bytesFromBigInteger(r), K.getBytes());
-        return Proof.<T>builder().build().<T>builder().secret(secret).amount(blindSignature.getAmount()).keySetId(blindSignature.getKeySetId()).unblindedSignature(Signature.fromBytes(C)).build();
+        return Proof.<T>builder().build().<T>builder().secret(secret).amount(blindSignature.getAmount()).keySetId(blindSignature.getKeySetId().toString()).unblindedSignature(Signature.fromBytes(C)).build();
     }
 }
