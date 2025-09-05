@@ -4,7 +4,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>cashu-wallet</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.1.2</version>
     </parent>
 
     <artifactId>cashu-wallet-protocol</artifactId>
@@ -25,6 +25,10 @@
     </distributionManagement>
 
     <repositories>
+        <repository>
+            <id>reposilite-snapshots</id>
+            <url>https://maven.398ja.xyz/snapshots</url>
+        </repository>
         <repository>
             <id>reposilite-releases</id>
             <url>https://maven.398ja.xyz/releases</url>
