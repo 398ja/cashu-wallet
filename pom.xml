@@ -4,7 +4,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>cashu-wallet</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1.2</version>
     <packaging>pom</packaging>
 
     <name>cashu-wallet</name>
@@ -27,6 +27,10 @@
 
     <repositories>
         <repository>
+            <id>reposilite-snapshots</id>
+            <url>https://maven.398ja.xyz/snapshots</url>
+        </repository>
+        <repository>
             <id>reposilite-releases</id>
             <url>https://maven.398ja.xyz/releases</url>
         </repository>
@@ -37,7 +41,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
 
-        <cashu-lib.version>0.1.1</cashu-lib.version>
+        <cashu-lib.version>0.1.2</cashu-lib.version>
 
         <lombok.version>1.18.36</lombok.version>
         <bcprov-jdk18on.version>1.72</bcprov-jdk18on.version>

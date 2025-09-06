@@ -1,6 +1,11 @@
 # Cashu Wallet
 
-This project contains an experimental Java wallet for the [Cashu](https://github.com/cashubtc/cashu) eCash system.  It focuses on the protocol around minting tokens as described in [NUT‑04](https://github.com/cashubtc/nuts/blob/main/04.md).
+This project contains an experimental Java wallet for the [Cashu](https://github.com/cashubtc/cashu) eCash system. It focuses on the protocol around minting tokens as described in [NUT‑04](https://github.com/cashubtc/nuts/blob/main/04.md).
+
+## Version
+
+- Current project version: `0.1.2`
+- Built with Java 21 and Maven.
 
 ## Minting Flow
 
@@ -15,12 +20,16 @@ The mint's info endpoint (see NUT‑06) exposes which method‑unit pairs are su
 
 ## Building
 
-The project uses Java 21 and Maven.  Run tests with:
+The project uses Java 21 and Maven. Run tests with:
 
 ```bash
 mvn -q verify
 ```
 
-This will also generate code coverage reports using JaCoCo in `target/site/jacoco` for each module.
+This also generates code coverage reports using JaCoCo in `target/site/jacoco` for each module.
 
 Note that the build requires additional Cashu libraries which are not included in this repository.
+
+## License
+
+Released under the MIT License. See `LICENSE` for details.
