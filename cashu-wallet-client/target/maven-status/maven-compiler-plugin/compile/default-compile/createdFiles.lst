@@ -1,0 +1,11 @@
+xyz/tcheeric/cashu/wallet/client/impl/RequestCheckMeltQuoteState.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestMeltToken.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestMeltQuote.class
+xyz/tcheeric/cashu/wallet/client/AbstractRequestBase.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestCheckState.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestKeySetPublicKey.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestMintQuote.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestSwapToken.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestCheckMintQuoteState.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestActiveKeysets.class
+xyz/tcheeric/cashu/wallet/client/impl/RequestMintToken.class
