@@ -1,4 +1,15 @@
 xyz/tcheeric/cashu/wallet/proto/service/BDHKEUtilsServiceImpl.class
 xyz/tcheeric/cashu/wallet/proto/tasks/UnblindSignatureTask.class
+xyz/tcheeric/cashu/wallet/proto/service/ProofRecoveryService.class
+xyz/tcheeric/cashu/wallet/proto/state/DerivationStateManager.class
+xyz/tcheeric/cashu/wallet/proto/state/InMemoryDerivationStateManager$KeysetState.class
+xyz/tcheeric/cashu/wallet/proto/service/ProofRecoveryServiceImpl.class
+xyz/tcheeric/cashu/wallet/proto/builders/RestoreRequestBuilder.class
+xyz/tcheeric/cashu/wallet/proto/mnemonic/MnemonicManager$ValidationResult.class
+xyz/tcheeric/cashu/wallet/proto/mnemonic/MnemonicManager.class
+xyz/tcheeric/cashu/wallet/proto/tasks/DeriveSecretsTask.class
+xyz/tcheeric/cashu/wallet/proto/tasks/DeriveSecretsTask$DeriveSecretsResult.class
+xyz/tcheeric/cashu/wallet/proto/state/InMemoryDerivationStateManager.class
+xyz/tcheeric/cashu/wallet/proto/mnemonic/SecureStorageRecommendations.class
 xyz/tcheeric/cashu/wallet/proto/service/BDHKEUtilsService.class
 xyz/tcheeric/cashu/wallet/proto/nut/NUT04.class
