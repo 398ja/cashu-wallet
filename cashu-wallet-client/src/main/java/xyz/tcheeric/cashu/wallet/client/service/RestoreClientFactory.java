@@ -1,5 +1,6 @@
 package xyz.tcheeric.cashu.wallet.client.service;
 
+import xyz.tcheeric.cashu.common.KeySet;
 import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 
@@ -14,8 +15,9 @@ public interface RestoreClientFactory {
      * Creates a restore client for the given mint URL and request payload.
      *
      * @param mintUrl Mint base URL
+     * @param keySet Keyset providing mint public keys for unblinding
      * @param request Restore request payload
      * @return configured RequestRestore instance
      */
-    RequestRestore create(String mintUrl, PostRestoreRequest request);
+    RequestRestore create(String mintUrl, KeySet keySet, PostRestoreRequest request);
 }

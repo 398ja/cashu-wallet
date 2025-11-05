@@ -1,9 +1,8 @@
 package xyz.tcheeric.cashu.wallet.client.service;
 
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.crypto.DeterministicKey;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.DeterministicSecret;
@@ -16,6 +15,7 @@ import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
+import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryServiceImpl;
 import xyz.tcheeric.cashu.wallet.proto.tasks.DeriveSecretsTask;
 
 import java.util.ArrayList;
@@ -46,9 +46,8 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 @Nut(13)
-@Log
-@AllArgsConstructor
-@ToString(exclude = "mintUrl") // Exclude URL from logs for cleaner output
+@Slf4j
+@ToString(exclude = {"mintUrl", "restoreClientFactory"}) // Exclude URL and factory from logs for cleaner output
 public class WalletRecoveryServiceImpl implements WalletRecoveryService {
 
     /**
@@ -67,12 +66,35 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
     private final ProofRecoveryService proofRecoveryService;
 
     /**
+     * Factory for creating restore clients. Allows tests to provide stubs.
+     */
+    private final RestoreClientFactory restoreClientFactory;
+
+    /**
      * Creates a WalletRecoveryServiceImpl with default dependencies.
      *
      * @param mintUrl Mint base URL
      */
     public WalletRecoveryServiceImpl(@NonNull String mintUrl) {
-        this(mintUrl, new RestoreRequestBuilder(), new ProofRecoveryServiceImpl());
+        this(mintUrl, new RestoreRequestBuilder(), new ProofRecoveryServiceImpl(), new DefaultRestoreClientFactory());
+    }
+
+    public WalletRecoveryServiceImpl(
+            @NonNull String mintUrl,
+            @NonNull RestoreRequestBuilder requestBuilder,
+            @NonNull ProofRecoveryService proofRecoveryService) {
+        this(mintUrl, requestBuilder, proofRecoveryService, new DefaultRestoreClientFactory());
+    }
+
+    public WalletRecoveryServiceImpl(
+            @NonNull String mintUrl,
+            @NonNull RestoreRequestBuilder requestBuilder,
+            @NonNull ProofRecoveryService proofRecoveryService,
+            @NonNull RestoreClientFactory restoreClientFactory) {
+        this.mintUrl = mintUrl;
+        this.requestBuilder = requestBuilder;
+        this.proofRecoveryService = proofRecoveryService;
+        this.restoreClientFactory = restoreClientFactory;
     }
 
     @Override
@@ -96,15 +118,15 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
             throw new IllegalArgumentException("Invalid BIP39 mnemonic phrase");
         }
 
-        log.info(String.format("wallet_recovery_started keysets_count=%d mint=%s",
-            keysetIds.size(), mintUrl));
+        log.info("wallet_recovery service_started keysets_count={} mint_url={}",
+            keysetIds.size(), mintUrl);
 
         // Derive master key from mnemonic
         DeterministicKey masterKey;
         try {
             masterKey = Bip39.mnemonicToMasterKey(mnemonic, passphrase);
         } catch (Exception e) {
-            log.severe(String.format("master_key_derivation_failed error=%s", e.getMessage()));
+            log.error("wallet_recovery master_key_derivation_failed error={} impact=abort", e.getMessage(), e);
             throw new IllegalStateException("Failed to derive master key from mnemonic: " + e.getMessage(), e);
         }
 
@@ -119,29 +141,29 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
                 // Find the corresponding KeySet
                 KeySet keySet = keySetMap.get(keysetId.toString());
                 if (keySet == null) {
-                    log.warning(String.format("keyset_not_found keyset=%s skipping", keysetId));
+                    log.warn("wallet_recovery keyset_missing keyset={} action=skip", keysetId);
                     continue;
                 }
 
-                log.info(String.format("recovering_keyset keyset=%s", keysetId));
+                log.info("wallet_recovery keyset_processing_started keyset={}", keysetId);
 
                 List<Proof<DeterministicSecret>> keysetProofs =
                     recoverKeyset(masterKey, keysetId, keySet, 0);
 
                 allProofs.addAll(keysetProofs);
 
-                log.info(String.format("keyset_recovery_completed keyset=%s recovered_count=%d",
-                    keysetId, keysetProofs.size()));
+                log.info("wallet_recovery keyset_processing_completed keyset={} recovered_count={}",
+                    keysetId, keysetProofs.size());
 
             } catch (Exception e) {
-                log.severe(String.format("keyset_recovery_failed keyset=%s error=%s",
-                    keysetId, e.getMessage()));
+                log.error("wallet_recovery keyset_processing_failed keyset={} error={} impact=continuing_other_keysets",
+                    keysetId, e.getMessage(), e);
                 // Continue with other keysets even if one fails
             }
         }
 
-        log.info(String.format("wallet_recovery_completed total_proofs=%d keysets_recovered=%d",
-            allProofs.size(), keysetIds.size()));
+        log.info("wallet_recovery service_completed total_proofs={} requested_keysets={}",
+            allProofs.size(), keysetIds.size());
 
         return allProofs;
     }
@@ -172,8 +194,8 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
             throw new IllegalArgumentException("Start counter must be non-negative, got: " + startCounter);
         }
 
-        log.info(String.format("keyset_recovery_started keyset=%s start_counter=%d batch_size=%d",
-            keysetId, startCounter, batchSize));
+        log.info("wallet_recovery keyset_recovery_started keyset={} start_counter={} batch_size={}",
+            keysetId, startCounter, batchSize);
 
         List<Proof<DeterministicSecret>> allProofs = new ArrayList<>();
         int counter = startCounter;
@@ -183,8 +205,8 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
         while (emptyBatches < MAX_EMPTY_BATCHES) {
             batchNumber++;
 
-            log.fine(String.format("processing_batch keyset=%s batch=%d counter=%d empty_batches=%d",
-                keysetId, batchNumber, counter, emptyBatches));
+            log.debug("wallet_recovery batch_processing_started keyset={} batch={} counter={} empty_batches={}",
+                keysetId, batchNumber, counter, emptyBatches);
 
             try {
                 // Step 1: Derive secrets and blinding factors for this batch
@@ -206,7 +228,7 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
                 );
 
                 // Step 3: Submit restore request to mint
-                RequestRestore restoreClient = new RequestRestore(mintUrl, request);
+                RequestRestore restoreClient = restoreClientFactory.create(mintUrl, keySet, request);
                 PostRestoreResponse response = restoreClient.execute();
 
                 // Step 4: Process response
@@ -214,15 +236,15 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
                     response.getBlindSignatures().isEmpty()) {
 
                     emptyBatches++;
-                    log.fine(String.format("empty_batch keyset=%s batch=%d counter=%d empty_count=%d",
-                        keysetId, batchNumber, counter, emptyBatches));
+                    log.debug("wallet_recovery batch_empty keyset={} batch={} counter={} empty_batch_count={}",
+                        keysetId, batchNumber, counter, emptyBatches);
 
                 } else {
                     // Signatures found - reset empty batch counter
                     emptyBatches = 0;
 
-                    log.info(String.format("signatures_found keyset=%s batch=%d signatures=%d",
-                        keysetId, batchNumber, response.getBlindSignatures().size()));
+                    log.info("wallet_recovery signatures_detected keyset={} batch={} signatures={}",
+                        keysetId, batchNumber, response.getBlindSignatures().size());
 
                     // Step 5: Unblind signatures to create proofs
                     List<Proof<DeterministicSecret>> batchProofs =
@@ -235,20 +257,20 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
 
                     allProofs.addAll(batchProofs);
 
-                    log.info(String.format("batch_recovered keyset=%s batch=%d proofs=%d total=%d",
-                        keysetId, batchNumber, batchProofs.size(), allProofs.size()));
+                    log.info("wallet_recovery batch_processing_completed keyset={} batch={} proofs_created={} total_accumulated={}",
+                        keysetId, batchNumber, batchProofs.size(), allProofs.size());
                 }
 
             } catch (Exception e) {
-                log.severe(String.format("batch_processing_failed keyset=%s batch=%d counter=%d error=%s",
-                    keysetId, batchNumber, counter, e.getMessage()));
+                log.error("wallet_recovery batch_processing_failed keyset={} batch={} counter={} error={} impact=increment_empty_batches",
+                    keysetId, batchNumber, counter, e.getMessage(), e);
 
                 // Increment empty batches on error to eventually terminate
                 emptyBatches++;
 
                 // If we hit too many errors, stop recovery for this keyset
                 if (emptyBatches >= MAX_EMPTY_BATCHES) {
-                    log.warning(String.format("max_errors_reached keyset=%s stopping_recovery", keysetId));
+                    log.warn("wallet_recovery batch_error_limit_reached keyset={} action=stop_recovery", keysetId);
                     break;
                 }
             }
@@ -257,9 +279,17 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
             counter += batchSize;
         }
 
-        log.info(String.format("keyset_recovery_finished keyset=%s total_proofs=%d batches_processed=%d",
-            keysetId, allProofs.size(), batchNumber));
+        log.info("wallet_recovery keyset_recovery_finished keyset={} total_proofs={} batches_processed={}",
+            keysetId, allProofs.size(), batchNumber);
 
         return allProofs;
+    }
+
+    private static final class DefaultRestoreClientFactory implements RestoreClientFactory {
+
+        @Override
+        public RequestRestore create(String mintUrl, KeySet keySet, PostRestoreRequest request) {
+            return new RequestRestore(mintUrl, request);
+        }
     }
 }
