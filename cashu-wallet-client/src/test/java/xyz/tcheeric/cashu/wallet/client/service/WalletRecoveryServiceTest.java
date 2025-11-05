@@ -4,28 +4,30 @@ import org.bitcoinj.crypto.DeterministicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.*;
 import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
 import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
  * Integration tests for {@link WalletRecoveryServiceImpl}.
  */
 @ExtendWith(MockitoExtension.class)
-class WalletRecoveryServiceIT {
+class WalletRecoveryServiceTest {
 
     private static final String TEST_MNEMONIC = "abandon abandon abandon abandon abandon abandon " +
                                                 "abandon abandon abandon abandon abandon about";
@@ -46,7 +48,7 @@ class WalletRecoveryServiceIT {
 
     @BeforeEach
     void setUp() {
-        service = new WalletRecoveryServiceImpl(TEST_MINT_URL, requestBuilder, proofRecoveryService);
+        service = serviceWithFactory(factoryReturningResponses(List.of()));
         keysetId = KeysetId.fromString(TEST_KEYSET_ID);
         masterKey = Bip39.mnemonicToMasterKey(TEST_MNEMONIC, TEST_PASSPHRASE);
 
@@ -58,235 +60,171 @@ class WalletRecoveryServiceIT {
         keySet.setKeys(keys);
     }
 
+    /**
+     * Ensures recover rejects a mnemonic that fails BIP39 validation.
+     */
     @Test
-    void testRecoverThrowsOnInvalidMnemonic() {
-        // Given
+    void shouldThrowWhenMnemonicIsInvalid() {
+        // Arrange
         String invalidMnemonic = "invalid mnemonic phrase";
 
-        // When/Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> service.recover(invalidMnemonic, "", List.of(keysetId), List.of(keySet))
-        );
-        assertTrue(exception.getMessage().contains("Invalid"));
+        // Act & Assert
+        assertThatThrownBy(() -> service.recover(invalidMnemonic, "", List.of(keysetId), List.of(keySet)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid");
     }
 
+    /**
+     * Ensures recover fails fast when no keyset IDs are provided.
+     */
     @Test
-    void testRecoverThrowsOnEmptyKeysetIds() {
-        // When/Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> service.recover(TEST_MNEMONIC, TEST_PASSPHRASE, List.of(), List.of(keySet))
-        );
-        assertTrue(exception.getMessage().contains("empty"));
+    void shouldThrowWhenKeysetIdsListIsEmpty() {
+        // Act & Assert
+        assertThatThrownBy(() -> service.recover(TEST_MNEMONIC, TEST_PASSPHRASE, List.of(), List.of(keySet)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("empty");
     }
 
+    /**
+     * Ensures recover fails when no keyset metadata is supplied.
+     */
     @Test
-    void testRecoverThrowsOnEmptyKeySets() {
-        // When/Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> service.recover(TEST_MNEMONIC, TEST_PASSPHRASE, List.of(keysetId), List.of())
-        );
-        assertTrue(exception.getMessage().contains("empty"));
+    void shouldThrowWhenKeySetsCollectionIsEmpty() {
+        // Act & Assert
+        assertThatThrownBy(() -> service.recover(TEST_MNEMONIC, TEST_PASSPHRASE, List.of(keysetId), List.of()))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("empty");
     }
 
+    /**
+     * Ensures recoverKeyset rejects a non-positive batch size.
+     */
     @Test
-    void testRecoverKeysetThrowsOnNegativeBatchSize() {
-        // When/Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> service.recoverKeyset(masterKey, keysetId, keySet, 0, -1)
-        );
-        assertTrue(exception.getMessage().contains("positive"));
+    void shouldThrowWhenBatchSizeIsNotPositive() {
+        // Act & Assert
+        assertThatThrownBy(() -> service.recoverKeyset(masterKey, keysetId, keySet, 0, -1))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("positive");
     }
 
+    /**
+     * Ensures recoverKeyset rejects a negative starting counter.
+     */
     @Test
-    void testRecoverKeysetThrowsOnNegativeStartCounter() {
-        // When/Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> service.recoverKeyset(masterKey, keysetId, keySet, -1, 100)
-        );
-        assertTrue(exception.getMessage().contains("non-negative"));
+    void shouldThrowWhenStartCounterIsNegative() {
+        // Act & Assert
+        assertThatThrownBy(() -> service.recoverKeyset(masterKey, keysetId, keySet, -1, 100))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("non-negative");
     }
 
+    /**
+     * Ensures the default batch size is used when callers rely on the overload without
+     * providing a custom value.
+     */
     @Test
-    void testRecoverKeysetUsesDefaultBatchSize() {
-        // Given - setup mocks to return empty responses immediately
+    void shouldUseDefaultBatchSizeWhenRecoveringKeyset() {
+        // Arrange
         when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
             .thenReturn(new PostRestoreRequest(List.of()));
+        WalletRecoveryServiceImpl localService = serviceWithFactory(factoryReturningResponses(List.of()));
 
-        // Mock empty response to trigger termination
-        PostRestoreResponse emptyResponse = new PostRestoreResponse();
-        emptyResponse.setBlindSignatures(List.of());
-
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recoverKeyset(
+        // Act
+        List<Proof<DeterministicSecret>> proofs = localService.recoverKeyset(
             masterKey,
             keysetId,
             keySet,
             0
         );
 
-        // Then
-        assertNotNull(proofs);
-        assertTrue(proofs.isEmpty());
+        // Assert
+        assertThat(proofs).isEmpty();
+        ArgumentCaptor<List<DeterministicSecret>> secretsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(requestBuilder, atLeastOnce()).buildRequestFromSecrets(secretsCaptor.capture(), any(), anyInt());
+        assertThat(secretsCaptor.getAllValues().get(0)).hasSize(WalletRecoveryService.DEFAULT_BATCH_SIZE);
     }
 
+    /**
+     * Verifies the recovery loop halts after three consecutive empty responses.
+     */
     @Test
-    void testRecoverKeysetStopsAfterThreeEmptyBatches() {
-        // Given - setup mocks to always return empty responses
+    void shouldStopAfterThreeConsecutiveEmptyBatches() {
+        // Arrange
         when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
             .thenReturn(new PostRestoreRequest(List.of()));
 
-        PostRestoreResponse emptyResponse = new PostRestoreResponse();
-        emptyResponse.setBlindSignatures(List.of());
+        WalletRecoveryServiceImpl localService = serviceWithFactory(
+            factoryReturningResponses(List.of(emptyResponse(), emptyResponse(), emptyResponse()))
+        );
 
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recoverKeyset(
+        // Act
+        List<Proof<DeterministicSecret>> proofs = localService.recoverKeyset(
             masterKey,
             keysetId,
             keySet,
             0,
-            10  // Small batch for faster test
+            10
         );
 
-        // Then
-        assertNotNull(proofs);
-        assertTrue(proofs.isEmpty());
-        // Should have called builder exactly 3 times (MAX_EMPTY_BATCHES)
-        verify(requestBuilder, times(3)).buildRequestFromSecrets(any(), any(), anyInt());
+        // Assert
+        assertThat(proofs).isEmpty();
+        verify(requestBuilder, times(WalletRecoveryService.MAX_EMPTY_BATCHES))
+            .buildRequestFromSecrets(any(), any(), anyInt());
     }
 
+    /**
+     * Ensures wallet recovery keeps processing remaining keysets when one is missing.
+     */
     @Test
-    void testRecoverKeysetResetsEmptyBatchCountOnSuccess() {
-        // Given
-        when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
-            .thenReturn(new PostRestoreRequest(List.of()));
-
-        // First 2 batches: empty
-        // Third batch: has signatures
-        // Fourth batch: empty (should reset counter)
-        // Fifth-Seventh batches: empty (to reach 3 consecutive empties)
-        PostRestoreResponse emptyResponse = new PostRestoreResponse();
-        emptyResponse.setBlindSignatures(List.of());
-
-        PostRestoreResponse successResponse = new PostRestoreResponse();
-        List<BlindSignature> signatures = new ArrayList<>();
-        signatures.add(createMockBlindSignature());
-        successResponse.setBlindSignatures(signatures);
-
-        // Mock recovery service to return empty proofs (we just care about the flow)
-        when(proofRecoveryService.unblindAndCreateProofs(any(), any(), any(), any()))
-            .thenReturn(List.of());
-
-        // Note: This test is simplified since we can't easily mock RequestRestore execution
-        // In a real scenario, you'd use dependency injection for the REST client
-    }
-
-    @Test
-    void testRecoverWithValidMnemonic() {
-        // Given
-        List<KeysetId> keysetIds = List.of(keysetId);
+    void shouldContinueRecoveringOtherKeysetsWhenOneIsMissing() {
+        // Arrange
+        KeysetId missingKeysetId = KeysetId.fromString("009a1f293253e41f");
+        List<KeysetId> keysetIds = List.of(keysetId, missingKeysetId);
         List<KeySet> keySets = List.of(keySet);
 
-        // Mock builder
         when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
             .thenReturn(new PostRestoreRequest(List.of()));
 
-        // Mock empty responses to quickly terminate
-        PostRestoreResponse emptyResponse = new PostRestoreResponse();
-        emptyResponse.setBlindSignatures(List.of());
+        WalletRecoveryServiceImpl localService = serviceWithFactory(factoryReturningResponses(List.of()));
 
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recover(
+        // Act
+        List<Proof<DeterministicSecret>> proofs = localService.recover(
             TEST_MNEMONIC,
             TEST_PASSPHRASE,
             keysetIds,
             keySets
         );
 
-        // Then
-        assertNotNull(proofs);
+        // Assert
+        assertThat(proofs).isEmpty();
     }
 
+    /**
+     * Verifies the convenience constructor wires default collaborators.
+     */
     @Test
-    void testRecoverWithMultipleKeysets() {
-        // Given
-        KeysetId keysetId2 = KeysetId.fromString("009a1f293253e41f");
-        KeySet keySet2 = new KeySet();
-        keySet2.setId("009a1f293253e41f");
-        Keys keys2 = new Keys();
-        keys2.put(java.math.BigInteger.ONE, mock(PublicKey.class));
-        keySet2.setKeys(keys2);
-
-        List<KeysetId> keysetIds = List.of(keysetId, keysetId2);
-        List<KeySet> keySets = List.of(keySet, keySet2);
-
-        // Mock builder
-        when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
-            .thenReturn(new PostRestoreRequest(List.of()));
-
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recover(
-            TEST_MNEMONIC,
-            TEST_PASSPHRASE,
-            keysetIds,
-            keySets
-        );
-
-        // Then
-        assertNotNull(proofs);
-        // Should have attempted recovery for both keysets
-        verify(requestBuilder, atLeast(6)).buildRequestFromSecrets(any(), any(), anyInt());
-        // (3 empty batches per keyset = 6 total calls minimum)
-    }
-
-    @Test
-    void testRecoverContinuesOnKeysetError() {
-        // Given
-        KeysetId keysetId2 = KeysetId.fromString("009a1f293253e41f");
-        // Intentionally don't add keySet2 to the list to cause lookup failure
-
-        List<KeysetId> keysetIds = List.of(keysetId, keysetId2);
-        List<KeySet> keySets = List.of(keySet);  // Only one keyset
-
-        // Mock builder
-        when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
-            .thenReturn(new PostRestoreRequest(List.of()));
-
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recover(
-            TEST_MNEMONIC,
-            TEST_PASSPHRASE,
-            keysetIds,
-            keySets
-        );
-
-        // Then - should still succeed and process first keyset
-        assertNotNull(proofs);
-    }
-
-    @Test
-    void testConstructorWithMintUrlOnly() {
-        // When
+    void shouldCreateServiceWhenOnlyMintUrlProvided() {
+        // Act
         WalletRecoveryServiceImpl simpleService = new WalletRecoveryServiceImpl(TEST_MINT_URL);
 
-        // Then
-        assertNotNull(simpleService);
+        // Assert
+        assertThat(simpleService).isNotNull();
     }
 
+    /**
+     * Ensures a custom batch size is propagated to the request builder.
+     */
     @Test
-    void testRecoverKeysetWithCustomBatchSize() {
-        // Given
+    void shouldPropagateCustomBatchSizeWhenProvided() {
+        // Arrange
         int customBatchSize = 50;
-
         when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
             .thenReturn(new PostRestoreRequest(List.of()));
 
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recoverKeyset(
+        WalletRecoveryServiceImpl localService = serviceWithFactory(factoryReturningResponses(List.of()));
+
+        // Act
+        List<Proof<DeterministicSecret>> proofs = localService.recoverKeyset(
             masterKey,
             keysetId,
             keySet,
@@ -294,65 +232,33 @@ class WalletRecoveryServiceIT {
             customBatchSize
         );
 
-        // Then
-        assertNotNull(proofs);
-        // Verify batch size was used (would need to verify DeriveSecretsTask creation, which is internal)
+        // Assert
+        assertThat(proofs).isEmpty();
+        ArgumentCaptor<List<DeterministicSecret>> secretsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(requestBuilder, atLeastOnce()).buildRequestFromSecrets(secretsCaptor.capture(), any(), anyInt());
+        assertThat(secretsCaptor.getAllValues().get(0)).hasSize(customBatchSize);
     }
 
-    @Test
-    void testRecoverKeysetWithNonZeroStartCounter() {
-        // Given
-        int startCounter = 100;
-
-        when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
-            .thenReturn(new PostRestoreRequest(List.of()));
-
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recoverKeyset(
-            masterKey,
-            keysetId,
-            keySet,
-            startCounter,
-            10
-        );
-
-        // Then
-        assertNotNull(proofs);
+    private WalletRecoveryServiceImpl serviceWithFactory(RestoreClientFactory factory) {
+        return new WalletRecoveryServiceImpl(TEST_MINT_URL, requestBuilder, proofRecoveryService, factory);
     }
 
-    @Test
-    void testRecoverUsesCorrectPassphrase() {
-        // Given
-        String customPassphrase = "my-passphrase";
-        List<KeysetId> keysetIds = List.of(keysetId);
-        List<KeySet> keySets = List.of(keySet);
-
-        when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
-            .thenReturn(new PostRestoreRequest(List.of()));
-
-        // When
-        List<Proof<DeterministicSecret>> proofs = service.recover(
-            TEST_MNEMONIC,
-            customPassphrase,
-            keysetIds,
-            keySets
-        );
-
-        // Then - should derive different master key with passphrase
-        assertNotNull(proofs);
+    private RestoreClientFactory factoryReturningResponses(List<PostRestoreResponse> responses) {
+        Deque<PostRestoreResponse> queue = new ArrayDeque<>(responses);
+        return (mintUrl, keySet, request) -> new RequestRestore(mintUrl, request) {
+            @Override
+            public PostRestoreResponse execute() {
+                if (queue.isEmpty()) {
+                    return emptyResponse();
+                }
+                return queue.removeFirst();
+            }
+        };
     }
 
-    // Helper methods
-
-    private BlindSignature createMockBlindSignature() {
-        BlindSignature sig = mock(BlindSignature.class);
-        when(sig.getAmount()).thenReturn(1);
-        when(sig.getKeySetId()).thenReturn(KeysetId.fromString(TEST_KEYSET_ID));
-
-        Signature blindedSig = mock(Signature.class);
-        when(blindedSig.getBytes()).thenReturn(new byte[33]);
-        when(sig.getBlindedSignature()).thenReturn(blindedSig);
-
-        return sig;
+    private PostRestoreResponse emptyResponse() {
+        PostRestoreResponse response = new PostRestoreResponse();
+        response.setBlindSignatures(List.of());
+        return response;
     }
 }
