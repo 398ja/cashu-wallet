@@ -23,5 +23,6 @@
 hs_err_pid*
 replay_pid*
 /.idea/
+/.claude/
 /cashu-wallet-client/target/
 /cashu-wallet-protocol/target/

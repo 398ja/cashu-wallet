@@ -1,4 +1,12 @@
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/builders/RestoreRequestBuilder.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/mnemonic/MnemonicManager.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/mnemonic/SecureStorageRecommendations.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/nut/NUT04.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/BDHKEUtilsService.java
-/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/tasks/UnblindSignatureTask.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/BDHKEUtilsServiceImpl.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/ProofRecoveryService.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/ProofRecoveryServiceImpl.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/state/DerivationStateManager.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/state/InMemoryDerivationStateManager.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/tasks/DeriveSecretsTask.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/tasks/UnblindSignatureTask.java

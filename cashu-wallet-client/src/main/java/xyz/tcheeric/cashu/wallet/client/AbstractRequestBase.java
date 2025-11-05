@@ -2,13 +2,13 @@ package xyz.tcheeric.cashu.wallet.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.web.client.RestTemplate;
 
 @SuppressWarnings("ALL")
 @Getter
-@Log
+@Slf4j
 public abstract class AbstractRequestBase<T, U> {
 
     private final RestTemplate restTemplate;
@@ -41,8 +41,22 @@ public abstract class AbstractRequestBase<T, U> {
 
     public T execute() {
         return switch (httpMethod) {
-            case HTTP_METHOD_GET -> restTemplate.getForObject(baseUrl + path, responseType);
-            case HTTP_METHOD_POST -> restTemplate.postForObject(baseUrl + path, this.requestObject, responseType);
+            case HTTP_METHOD_GET -> {
+                log.debug("request_base dispatching_request method={} target={} reason=execute_invoked",
+                    HTTP_METHOD_GET, baseUrl + path);
+                T response = restTemplate.getForObject(baseUrl + path, responseType);
+                log.info("request_base request_completed method={} target={} result=success",
+                    HTTP_METHOD_GET, baseUrl + path);
+                yield response;
+            }
+            case HTTP_METHOD_POST -> {
+                log.debug("request_base dispatching_request method={} target={} reason=execute_invoked",
+                    HTTP_METHOD_POST, baseUrl + path);
+                T response = restTemplate.postForObject(baseUrl + path, this.requestObject, responseType);
+                log.info("request_base request_completed method={} target={} result=success",
+                    HTTP_METHOD_POST, baseUrl + path);
+                yield response;
+            }
             default -> throw new IllegalArgumentException("Unsupported HTTP method: " + httpMethod);
         };
     }
