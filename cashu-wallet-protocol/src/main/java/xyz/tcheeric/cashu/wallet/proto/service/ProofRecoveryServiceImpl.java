@@ -3,7 +3,7 @@ package xyz.tcheeric.cashu.wallet.proto.service;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import xyz.tcheeric.cashu.common.*;
 import xyz.tcheeric.cashu.crypto.util.Utils;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
@@ -28,7 +28,7 @@ import java.util.List;
  * @since 1.0.0
  */
 @Nut(9)
-@Log
+@Slf4j
 @AllArgsConstructor
 @ToString
 public class ProofRecoveryServiceImpl implements ProofRecoveryService {
@@ -62,12 +62,12 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
 
         List<BlindSignature> blindSignatures = response.getBlindSignatures();
         if (blindSignatures == null || blindSignatures.isEmpty()) {
-            log.info("unblind_proofs_empty_response no_signatures_returned");
+            log.info("proof_recovery response_empty keyset={} action=skip_unblinding", keySet.getId());
             return List.of();  // No signatures to unblind
         }
 
-        log.info(String.format("unblind_proofs_started keyset=%s signatures_count=%d secrets_count=%d",
-            keySet.getId(), blindSignatures.size(), secrets.size()));
+        log.info("proof_recovery unblinding_started keyset={} signatures_count={} secrets_count={}",
+            keySet.getId(), blindSignatures.size(), secrets.size());
 
         List<Proof<DeterministicSecret>> proofs = new ArrayList<>(blindSignatures.size());
 
@@ -81,20 +81,16 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
             try {
                 // Validate blinding factor
                 if (blindingFactor == null || blindingFactor.length != 32) {
-                    log.warning(String.format(
-                        "unblind_proof_invalid_blinding_factor index=%d counter=%d",
-                        i, secret.getCounter()
-                    ));
+                    log.warn("proof_recovery blinding_factor_invalid index={} counter={} action=skip_signature",
+                        i, secret.getCounter());
                     continue;  // Skip this proof
                 }
 
                 // Get the mint's public key for this amount
                 PublicKey publicKey = keySet.getKeys().get(blindSig.getAmount());
                 if (publicKey == null) {
-                    log.warning(String.format(
-                        "unblind_proof_missing_public_key index=%d amount=%d counter=%d",
-                        i, blindSig.getAmount(), secret.getCounter()
-                    ));
+                    log.warn("proof_recovery public_key_missing index={} amount={} counter={} action=skip_signature",
+                        i, blindSig.getAmount(), secret.getCounter());
                     continue;  // Skip this proof
                 }
 
@@ -114,22 +110,18 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
                 Proof<DeterministicSecret> proof = unblindTask.execute();
                 proofs.add(proof);
 
-                log.fine(String.format(
-                    "unblind_proof_success index=%d amount=%d counter=%d keyset=%s",
-                    i, proof.getAmount(), secret.getCounter(), proof.getKeySetId()
-                ));
+                log.debug("proof_recovery unblinding_success index={} amount={} counter={} keyset={}",
+                    i, proof.getAmount(), secret.getCounter(), proof.getKeySetId());
 
             } catch (Exception e) {
-                log.severe(String.format(
-                    "unblind_proof_failed index=%d counter=%d error=%s",
-                    i, secret.getCounter(), e.getMessage()
-                ));
+                log.error("proof_recovery unblinding_failed index={} counter={} error={} impact=continuing_batch",
+                    i, secret.getCounter(), e.getMessage(), e);
                 // Continue processing other proofs - one failure shouldn't stop recovery
             }
         }
 
-        log.info(String.format("unblind_proofs_completed keyset=%s recovered_count=%d",
-            keySet.getId(), proofs.size()));
+        log.info("proof_recovery unblinding_completed keyset={} recovered_count={}",
+            keySet.getId(), proofs.size());
 
         return proofs;
     }
@@ -143,7 +135,7 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
         // For now, return all proofs assuming they are unspent
         // This will be implemented in a future iteration
 
-        log.warning("filter_unspent_proofs_not_implemented returning_all_proofs");
+        log.warn("proof_recovery spent_check_unimplemented mint_url={} action=return_all", mintUrl);
 
         return proofs;
     }

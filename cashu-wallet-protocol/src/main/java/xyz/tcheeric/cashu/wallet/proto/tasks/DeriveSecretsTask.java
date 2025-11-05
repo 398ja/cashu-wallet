@@ -3,7 +3,7 @@ package xyz.tcheeric.cashu.wallet.proto.tasks;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.crypto.DeterministicKey;
 import xyz.tcheeric.bips.bip32.nut.Nut13Derivation;
 import xyz.tcheeric.cashu.common.DeterministicSecret;
@@ -48,7 +48,7 @@ import java.util.List;
  * @since 1.0.0
  */
 @Nut(13)
-@Log
+@Slf4j
 @AllArgsConstructor
 @ToString(exclude = "masterKey") // Exclude sensitive key material from logs
 public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsResult> {
@@ -95,8 +95,8 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
      */
     @Override
     public DeriveSecretsResult execute() {
-        log.info(String.format("derive_secrets_started keyset=%s start_counter=%d count=%d",
-            keysetId, startCounter, count));
+        log.info("derive_secrets task_started keyset={} start_counter={} count={}",
+            keysetId, startCounter, count);
 
         List<DeterministicSecret> secrets = new ArrayList<>(count);
         List<byte[]> blindingFactors = new ArrayList<>(count);
@@ -126,10 +126,8 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
                 blindingFactors.add(pair.blindingFactor());
 
             } catch (Exception e) {
-                log.severe(String.format(
-                    "derive_secrets_failed keyset=%s counter=%d error=%s",
-                    keysetId, counter, e.getMessage()
-                ));
+                log.error("derive_secrets task_failed keyset={} counter={} error={} impact=abort_batch",
+                    keysetId, counter, e.getMessage(), e);
                 throw new IllegalStateException(
                     String.format("Failed to derive secret at counter %d: %s", counter, e.getMessage()),
                     e
@@ -137,8 +135,8 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
             }
         }
 
-        log.info(String.format("derive_secrets_completed keyset=%s derived_count=%d",
-            keysetId, secrets.size()));
+        log.info("derive_secrets task_completed keyset={} derived_count={}",
+            keysetId, secrets.size());
 
         return new DeriveSecretsResult(secrets, blindingFactors);
     }

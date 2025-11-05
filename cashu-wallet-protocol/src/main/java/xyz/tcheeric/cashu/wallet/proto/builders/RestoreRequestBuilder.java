@@ -3,7 +3,7 @@ package xyz.tcheeric.cashu.wallet.proto.builders;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import xyz.tcheeric.cashu.common.BlindedMessage;
 import xyz.tcheeric.cashu.common.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeysetId;
@@ -51,7 +51,7 @@ import java.util.List;
  * @since 1.0.0
  */
 @Nut(9)
-@Log
+@Slf4j
 @AllArgsConstructor
 @ToString
 public class RestoreRequestBuilder {
@@ -123,8 +123,8 @@ public class RestoreRequestBuilder {
             }
         }
 
-        log.info(String.format("create_blinded_messages_started keyset=%s count=%d amount=%d",
-            keysetId, secrets.size(), amount));
+        log.info("restore_request_builder blinding_started keyset={} secret_count={} amount={}",
+            keysetId, secrets.size(), amount);
 
         List<BlindedMessage> blindedMessages = new ArrayList<>(secrets.size());
 
@@ -154,10 +154,8 @@ public class RestoreRequestBuilder {
                 blindedMessages.add(blindedMessage);
 
             } catch (Exception e) {
-                log.severe(String.format(
-                    "create_blinded_message_failed index=%d counter=%d error=%s",
-                    i, secret.getCounter(), e.getMessage()
-                ));
+                log.error("restore_request_builder blinding_failed index={} counter={} error={} impact=abort_batch",
+                    i, secret.getCounter(), e.getMessage(), e);
                 throw new IllegalStateException(
                     String.format("Failed to create blinded message at index %d (counter=%d): %s",
                         i, secret.getCounter(), e.getMessage()),
@@ -166,8 +164,8 @@ public class RestoreRequestBuilder {
             }
         }
 
-        log.info(String.format("create_blinded_messages_completed keyset=%s created_count=%d",
-            keysetId, blindedMessages.size()));
+        log.info("restore_request_builder blinding_completed keyset={} created_count={}",
+            keysetId, blindedMessages.size());
 
         return blindedMessages;
     }
@@ -189,7 +187,7 @@ public class RestoreRequestBuilder {
             throw new IllegalArgumentException("Blinded messages list cannot be empty");
         }
 
-        log.fine(String.format("build_restore_request outputs_count=%d", blindedMessages.size()));
+        log.debug("restore_request_builder request_build_started outputs_count={}", blindedMessages.size());
 
         return new PostRestoreRequest(blindedMessages);
     }

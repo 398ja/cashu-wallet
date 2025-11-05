@@ -2,7 +2,7 @@ package xyz.tcheeric.cashu.wallet.proto.tasks;
 
 import lombok.AllArgsConstructor;
 import lombok.ToString;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import xyz.tcheeric.cashu.common.BlindSignature;
 import xyz.tcheeric.cashu.common.Proof;
 import xyz.tcheeric.cashu.common.PublicKey;
@@ -18,7 +18,7 @@ import xyz.tcheeric.cashu.wallet.proto.nut.NUT04;
 import java.math.BigInteger;
 
 @Nut(4)
-@Log
+@Slf4j
 @AllArgsConstructor
 @ToString
 public class UnblindSignatureTask<T extends Secret> implements Task<Proof<T>> {
@@ -35,8 +35,18 @@ public class UnblindSignatureTask<T extends Secret> implements Task<Proof<T>> {
 
     @Override
     public Proof<T> execute() {
+        log.debug("unblind_signature task_started keyset={} amount={} secret_type={}",
+            blindSignature.getKeySetId(), blindSignature.getAmount(), secret.getClass().getSimpleName());
         Signature C_ = blindSignature.getBlindedSignature();
         byte[] C = utilsService.unblindSignature(C_.getBytes(), Utils.bytesFromBigInteger(r), K.getBytes());
-        return Proof.<T>builder().build().<T>builder().secret(secret).amount(blindSignature.getAmount()).keySetId(blindSignature.getKeySetId().toString()).unblindedSignature(Signature.fromBytes(C)).build();
+        Proof<T> proof = Proof.<T>builder()
+            .secret(secret)
+            .amount(blindSignature.getAmount())
+            .keySetId(blindSignature.getKeySetId().toString())
+            .unblindedSignature(Signature.fromBytes(C))
+            .build();
+        log.debug("unblind_signature task_completed keyset={} amount={} secret_type={}",
+            blindSignature.getKeySetId(), blindSignature.getAmount(), secret.getClass().getSimpleName());
+        return proof;
     }
 }
