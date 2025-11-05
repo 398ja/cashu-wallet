@@ -32,7 +32,7 @@ class RestoreRequestBuilderTest {
     @BeforeEach
     void setUp() {
         builder = new RestoreRequestBuilder();
-        keysetId = new KeysetId(TEST_KEYSET_ID);
+        keysetId = KeysetId.fromString(TEST_KEYSET_ID);
 
         // Derive real secrets and blinding factors for testing
         DeterministicKey masterKey = Bip39.mnemonicToMasterKey(TEST_MNEMONIC, "");
@@ -149,7 +149,7 @@ class RestoreRequestBuilderTest {
     void testCreateBlindedMessagesThrowsOnMixedKeysetIds() {
         // Given - create secrets with different keyset IDs
         List<DeterministicSecret> mixedSecrets = new ArrayList<>(testSecrets);
-        KeysetId differentKeysetId = new KeysetId("009a1f293253e41f");
+        KeysetId differentKeysetId = KeysetId.fromString("009a1f293253e41f");
         DeterministicKey masterKey = Bip39.mnemonicToMasterKey(TEST_MNEMONIC, "");
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, differentKeysetId, 0, 1);
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();

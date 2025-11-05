@@ -7,9 +7,10 @@ import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeysetId;
 
+import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * Integration tests for {@link DeriveSecretsTask}.
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>These tests verify the task's ability to derive deterministic secrets and blinding
  * factors using real cryptographic operations from bip-utils.
  */
-class DeriveSecretsTaskIT {
+class DeriveSecretsTaskTest {
 
     private static final String TEST_MNEMONIC = "abandon abandon abandon abandon abandon abandon " +
                                                 "abandon abandon abandon abandon abandon about";
@@ -34,220 +35,243 @@ class DeriveSecretsTaskIT {
         keysetId = KeysetId.fromString(TEST_KEYSET_ID);
     }
 
+    /**
+     * Ensures execute derives the exact number of requested secrets and blinding factors.
+     */
     @Test
-    void testExecuteDerivesCorrectNumberOfSecrets() {
-        // Given
+    void shouldDeriveRequestedNumberOfSecrets() {
+        // Arrange
         int count = 10;
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, count);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then
-        assertNotNull(result);
-        assertEquals(count, result.getSecrets().size());
-        assertEquals(count, result.getBlindingFactors().size());
-        assertEquals(count, result.getCount());
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getSecrets()).hasSize(count);
+        assertThat(result.getBlindingFactors()).hasSize(count);
+        assertThat(result.getCount()).isEqualTo(count);
     }
 
+    /**
+     * Ensures derived secrets include the expected metadata.
+     */
     @Test
-    void testExecuteCreatesSecretsWithMetadata() {
-        // Given
+    void shouldPopulateSecretMetadataForEachEntry() {
+        // Arrange
         int startCounter = 5;
         int count = 3;
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, startCounter, count);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then
+        // Assert
         List<DeterministicSecret> secrets = result.getSecrets();
         for (int i = 0; i < count; i++) {
             DeterministicSecret secret = secrets.get(i);
-            assertTrue(secret.hasMetadata());
-            assertEquals(keysetId, secret.getKeysetId());
-            assertEquals(startCounter + i, secret.getCounter());
-            assertNotNull(secret.getDerivationPath());
+            assertThat(secret.hasMetadata()).isTrue();
+            assertThat(secret.getKeysetId()).isEqualTo(keysetId);
+            assertThat(secret.getCounter()).isEqualTo(startCounter + i);
+            assertThat(secret.getDerivationPath()).isNotNull();
         }
     }
 
+    /**
+     * Ensures repeated executions with identical inputs produce identical outputs.
+     */
     @Test
-    void testExecuteIsDeterministic() {
-        // Given
+    void shouldBeDeterministicForSameInputs() {
+        // Arrange
         DeriveSecretsTask task1 = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
         DeriveSecretsTask task2 = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result1 = task1.execute();
         DeriveSecretsTask.DeriveSecretsResult result2 = task2.execute();
 
-        // Then - same inputs produce same outputs
-        assertEquals(result1.getSecrets().size(), result2.getSecrets().size());
+        // Assert
+        assertThat(result1.getSecrets()).hasSameSizeAs(result2.getSecrets());
         for (int i = 0; i < result1.getSecrets().size(); i++) {
-            assertArrayEquals(
-                result1.getSecrets().get(i).getData(),
-                result2.getSecrets().get(i).getData(),
-                "Secret at index " + i + " should be identical"
-            );
-            assertArrayEquals(
-                result1.getBlindingFactors().get(i),
-                result2.getBlindingFactors().get(i),
-                "Blinding factor at index " + i + " should be identical"
-            );
+            assertThat(result1.getSecrets().get(i).getData())
+                .containsExactly(result2.getSecrets().get(i).getData());
+            assertThat(result1.getBlindingFactors().get(i))
+                .containsExactly(result2.getBlindingFactors().get(i));
         }
     }
 
+    /**
+     * Ensures different counters produce distinct secrets.
+     */
     @Test
-    void testExecuteWithDifferentCountersProducesDifferentSecrets() {
-        // Given
+    void shouldProduceDifferentSecretsWhenCountersDiffer() {
+        // Arrange
         DeriveSecretsTask task1 = new DeriveSecretsTask(masterKey, keysetId, 0, 1);
         DeriveSecretsTask task2 = new DeriveSecretsTask(masterKey, keysetId, 1, 1);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result1 = task1.execute();
         DeriveSecretsTask.DeriveSecretsResult result2 = task2.execute();
 
-        // Then - different counters produce different secrets
-        assertFalse(
-            java.util.Arrays.equals(
-                result1.getSecrets().get(0).getData(),
-                result2.getSecrets().get(0).getData()
-            ),
-            "Different counters should produce different secrets"
-        );
+        // Assert
+        assertThat(Arrays.equals(
+            result1.getSecrets().get(0).getData(),
+            result2.getSecrets().get(0).getData()
+        )).isFalse();
     }
 
+    /**
+     * Ensures the recommended batch size of 100 is supported.
+     */
     @Test
-    void testExecuteWithBatchOf100() {
-        // Given - NUT-13 recommended batch size
+    void shouldDeriveHundredSecretsWhenRequested() {
+        // Arrange
         int batchSize = 100;
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, batchSize);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then
-        assertEquals(batchSize, result.getSecrets().size());
-        assertEquals(batchSize, result.getBlindingFactors().size());
+        // Assert
+        assertThat(result.getSecrets()).hasSize(batchSize);
+        assertThat(result.getBlindingFactors()).hasSize(batchSize);
     }
 
+    /**
+     * Ensures blinding factors are exactly 32 bytes.
+     */
     @Test
-    void testBlindingFactorsAre32Bytes() {
-        // Given
+    void shouldProduce32ByteBlindingFactors() {
+        // Arrange
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then - all blinding factors should be 32 bytes
+        // Assert
         for (int i = 0; i < result.getBlindingFactors().size(); i++) {
             byte[] blindingFactor = result.getBlindingFactors().get(i);
-            assertNotNull(blindingFactor, "Blinding factor at index " + i + " should not be null");
-            assertEquals(32, blindingFactor.length,
-                "Blinding factor at index " + i + " should be 32 bytes");
+            assertThat(blindingFactor)
+                .describedAs("Blinding factor at index %s should be 32 bytes", i)
+                .isNotNull()
+                .hasSize(32);
         }
     }
 
+    /**
+     * Ensures derived secrets are exactly 32 bytes.
+     */
     @Test
-    void testSecretsAre32Bytes() {
-        // Given
+    void shouldProduce32ByteSecrets() {
+        // Arrange
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then - all secrets should be 32 bytes
+        // Assert
         for (int i = 0; i < result.getSecrets().size(); i++) {
             byte[] secret = result.getSecrets().get(i).getData();
-            assertNotNull(secret, "Secret at index " + i + " should not be null");
-            assertEquals(32, secret.length,
-                "Secret at index " + i + " should be 32 bytes");
+            assertThat(secret)
+                .describedAs("Secret at index %s should be 32 bytes", i)
+                .isNotNull()
+                .hasSize(32);
         }
     }
 
+    /**
+     * Ensures the validate method accepts matching list sizes.
+     */
     @Test
-    void testResultValidationPasses() {
-        // Given
+    void shouldPassValidationWhenListSizesMatch() {
+        // Arrange
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then - validation should not throw
-        assertDoesNotThrow(result::validate);
+        // Assert
+        assertThatCode(result::validate).doesNotThrowAnyException();
     }
 
+    /**
+     * Ensures large start counters are supported.
+     */
     @Test
-    void testExecuteWithLargeStartCounter() {
-        // Given - test with large counter value
+    void shouldSupportLargeStartCounter() {
+        // Arrange
         int startCounter = 1000;
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, startCounter, 10);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then
-        assertEquals(10, result.getSecrets().size());
-        assertEquals(startCounter, result.getSecrets().get(0).getCounter());
-        assertEquals(startCounter + 9, result.getSecrets().get(9).getCounter());
+        // Assert
+        assertThat(result.getSecrets()).hasSize(10);
+        assertThat(result.getSecrets().get(0).getCounter()).isEqualTo(startCounter);
+        assertThat(result.getSecrets().get(9).getCounter()).isEqualTo(startCounter + 9);
     }
 
+    /**
+     * Ensures all derived secrets retain the input keyset ID.
+     */
     @Test
-    void testSecretsHaveCorrectKeysetId() {
-        // Given
+    void shouldAssignKeysetIdToAllSecrets() {
+        // Arrange
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
-        // Then - all secrets should have the same keyset ID
+        // Assert
         for (DeterministicSecret secret : result.getSecrets()) {
-            assertEquals(keysetId, secret.getKeysetId());
+            assertThat(secret.getKeysetId()).isEqualTo(keysetId);
         }
     }
 
+    /**
+     * Ensures changing the mnemonic yields different secrets.
+     */
     @Test
-    void testDifferentMnemonicsProduceDifferentSecrets() {
-        // Given
+    void shouldProduceDifferentSecretsWhenMnemonicDiffers() {
+        // Arrange
         String mnemonic2 = "legal winner thank year wave sausage worth useful legal winner thank yellow";
         DeterministicKey masterKey2 = Bip39.mnemonicToMasterKey(mnemonic2, TEST_PASSPHRASE);
 
         DeriveSecretsTask task1 = new DeriveSecretsTask(masterKey, keysetId, 0, 1);
         DeriveSecretsTask task2 = new DeriveSecretsTask(masterKey2, keysetId, 0, 1);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result1 = task1.execute();
         DeriveSecretsTask.DeriveSecretsResult result2 = task2.execute();
 
-        // Then - different mnemonics produce different secrets
-        assertFalse(
-            java.util.Arrays.equals(
-                result1.getSecrets().get(0).getData(),
-                result2.getSecrets().get(0).getData()
-            ),
-            "Different mnemonics should produce different secrets"
-        );
+        // Assert
+        assertThat(Arrays.equals(
+            result1.getSecrets().get(0).getData(),
+            result2.getSecrets().get(0).getData()
+        )).isFalse();
     }
 
+    /**
+     * Ensures changing the keyset ID yields different secrets.
+     */
     @Test
-    void testDifferentKeysetsProduceDifferentSecrets() {
-        // Given
+    void shouldProduceDifferentSecretsWhenKeysetDiffers() {
+        // Arrange
         KeysetId keysetId2 = KeysetId.fromString("009a1f293253e41f");
 
         DeriveSecretsTask task1 = new DeriveSecretsTask(masterKey, keysetId, 0, 1);
         DeriveSecretsTask task2 = new DeriveSecretsTask(masterKey, keysetId2, 0, 1);
 
-        // When
+        // Act
         DeriveSecretsTask.DeriveSecretsResult result1 = task1.execute();
         DeriveSecretsTask.DeriveSecretsResult result2 = task2.execute();
 
-        // Then - different keysets produce different secrets
-        assertFalse(
-            java.util.Arrays.equals(
-                result1.getSecrets().get(0).getData(),
-                result2.getSecrets().get(0).getData()
-            ),
-            "Different keysets should produce different secrets"
-        );
+        // Assert
+        assertThat(Arrays.equals(
+            result1.getSecrets().get(0).getData(),
+            result2.getSecrets().get(0).getData()
+        )).isFalse();
     }
 }

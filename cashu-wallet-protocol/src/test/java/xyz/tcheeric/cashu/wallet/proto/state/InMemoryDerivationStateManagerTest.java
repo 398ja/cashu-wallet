@@ -41,7 +41,7 @@ class InMemoryDerivationStateManagerTest {
     @BeforeEach
     void setUp() {
         manager = new InMemoryDerivationStateManager();
-        keysetId = new KeysetId("009a1f293253e41e");
+        keysetId = KeysetId.fromString("009a1f293253e41e");
     }
 
     // ========================================
@@ -236,8 +236,9 @@ class InMemoryDerivationStateManagerTest {
         manager.setCounter(keysetId, 6);  // Only check up to 6
 
         List<Integer> gaps = manager.detectGaps(keysetId);
-        assertEquals(List.of(1, 2, 3, 4, 5), gaps);
-        // 6-9 are not gaps because current counter is 6
+        assertEquals(List.of(1, 2, 3, 4), gaps);
+        // Counter 5 has a mint, so it's not a gap
+        // 6-9 are not checked because current counter is 6 (check 0 to current-1)
     }
 
     // ========================================
@@ -298,8 +299,8 @@ class InMemoryDerivationStateManagerTest {
     @Test
     @DisplayName("Should clear all state")
     void testClearAll() {
-        KeysetId keyset1 = new KeysetId("009a1f293253e41e");
-        KeysetId keyset2 = new KeysetId("009a1f293253e41f");
+        KeysetId keyset1 = KeysetId.fromString("009a1f293253e41e");
+        KeysetId keyset2 = KeysetId.fromString("009a1f293253e41f");
 
         manager.recordMint(keyset1, 0);
         manager.setCounter(keyset1, 1);
@@ -342,8 +343,8 @@ class InMemoryDerivationStateManagerTest {
     @Test
     @DisplayName("Should handle export of multiple keysets")
     void testExportMultipleKeysets() {
-        KeysetId keyset1 = new KeysetId("009a1f293253e41e");
-        KeysetId keyset2 = new KeysetId("009a1f293253e41f");
+        KeysetId keyset1 = KeysetId.fromString("009a1f293253e41e");
+        KeysetId keyset2 = KeysetId.fromString("009a1f293253e41f");
 
         manager.recordMint(keyset1, 0);
         manager.setCounter(keyset1, 1);
@@ -362,7 +363,7 @@ class InMemoryDerivationStateManagerTest {
     @Test
     @DisplayName("Import should clear existing state")
     void testImportClearsExistingState() {
-        KeysetId existingKeyset = new KeysetId("existing");
+        KeysetId existingKeyset = KeysetId.fromString("0123456789abcdef");
         manager.recordMint(existingKeyset, 0);
         manager.setCounter(existingKeyset, 1);
 
@@ -388,8 +389,8 @@ class InMemoryDerivationStateManagerTest {
     @Test
     @DisplayName("Should handle multiple keysets independently")
     void testMultipleKeysets() {
-        KeysetId keyset1 = new KeysetId("009a1f293253e41e");
-        KeysetId keyset2 = new KeysetId("009a1f293253e41f");
+        KeysetId keyset1 = KeysetId.fromString("009a1f293253e41e");
+        KeysetId keyset2 = KeysetId.fromString("009a1f293253e41f");
 
         manager.recordMint(keyset1, 0);
         manager.recordMint(keyset1, 1);
