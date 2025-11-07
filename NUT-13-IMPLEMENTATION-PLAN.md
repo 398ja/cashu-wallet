@@ -183,6 +183,85 @@ m/129372'/0'/{keyset_id_int}'/{counter}'/1  (for blinding factors)
 6. Restore in batches of 100 tokens
 7. Continue until three successive batches are returned empty by the mint
 
+### Voucher Recovery Integration
+
+**Important**: Vouchers are **non-deterministic** and require separate backup/restore from NUT-13.
+
+NUT-13 covers **deterministic** secrets derived from a seed phrase. However, **gift card vouchers** (Model B) are non-deterministic because they:
+- Have random UUIDs (not derived from seed)
+- Are issued by merchants (not derived by wallet)
+- Must be backed up separately to Nostr
+
+#### Recovery Command with Vouchers
+
+```bash
+# Standard NUT-13 recovery (deterministic proofs only)
+cashu recover --seed "witch collapse practice feed..."
+
+# With vouchers (deterministic proofs + non-deterministic vouchers)
+cashu recover --seed "witch collapse practice feed..." --include-vouchers
+```
+
+#### Complete Recovery Flow with Vouchers
+
+1. **Deterministic Recovery (NUT-13)**:
+   - Wallet derives secrets from seed phrase
+   - Recovers regular proofs via NUT-09 (/restore endpoint)
+   - This is automatic with just the seed phrase
+
+2. **Voucher Recovery (Nostr)**:
+   - Requires `--include-vouchers` flag
+   - Queries Nostr for encrypted voucher backups (NIP-17)
+   - Decrypts using user's Nostr private key (NIP-44)
+   - Restores vouchers to wallet state
+
+3. **Combined Result**:
+   - User recovers both deterministic proofs AND non-deterministic vouchers
+   - Complete wallet state restored from seed + Nostr backup
+
+#### Why Vouchers Aren't Deterministic
+
+| Aspect | Deterministic Proofs (NUT-13) | Vouchers (Model B) |
+|--------|-------------------------------|---------------------|
+| **ID Generation** | Counter-based (predictable) | UUID (random) |
+| **Source** | Derived from seed phrase | Issued by merchant |
+| **Recovery Method** | Re-derive from seed | Query Nostr backup |
+| **Required Info** | Seed phrase only | Seed + Nostr key |
+| **Storage** | None needed (can regenerate) | Must backup to Nostr |
+
+#### Implementation Notes
+
+- The `--include-vouchers` flag triggers `VoucherService.restore(userNostrPrivateKey)`
+- Vouchers are encrypted with the user's Nostr private key before storage
+- Nostr private key can be derived from the same seed or stored separately
+- See `cashu-voucher` project for voucher backup/restore implementation
+
+#### Example Recovery Session
+
+```bash
+# User loses their wallet
+$ rm -rf ~/.cashu
+
+# Recover with seed phrase only (proofs only)
+$ cashu recover --seed "witch collapse practice feed..."
+✓ Recovered 150 deterministic proofs
+⚠ No vouchers restored (use --include-vouchers to restore vouchers)
+
+# Recover with vouchers
+$ cashu recover --seed "witch collapse practice feed..." --include-vouchers
+✓ Recovered 150 deterministic proofs
+✓ Recovered 3 vouchers from Nostr backup
+  - Coffee Shop: 5,000 sats
+  - Book Store: 10,000 sats
+  - Restaurant: $50.00 USD
+```
+
+#### See Also
+- [Voucher Implementation Plan](../cashu-mint/project/gift-card-plan-final-v2.md)
+- [Voucher README](../cashu-voucher/README.md)
+- Task 6.5: E2E test for NUT-13 + voucher integration
+- Task 5.12: Enhance RecoverWalletCmd with --include-vouchers flag
+
 ---
 
 ## Phase 1: Complete cashu-lib Foundation

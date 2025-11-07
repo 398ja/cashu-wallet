@@ -4,7 +4,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>cashu-wallet</artifactId>
-    <version>0.1.4</version>
+    <version>0.2.0</version>
     <packaging>pom</packaging>
 
     <name>cashu-wallet</name>
@@ -42,7 +42,8 @@
         <maven.compiler.target>21</maven.compiler.target>
 
         <!-- Dependency Versions -->
-        <cashu-lib.version>0.5.0</cashu-lib.version>
+        <cashu-lib.version>0.6.0</cashu-lib.version>
+        <cashu-voucher.version>0.2.0</cashu-voucher.version>
         <bip-utils.version>2.0.0</bip-utils.version>
         <spring-boot.version>3.5.5</spring-boot.version>
         <junit-jupiter.version>5.12.2</junit-jupiter.version>
@@ -104,6 +105,23 @@
                 <groupId>xyz.tcheeric</groupId>
                 <artifactId>cashu-lib-common</artifactId>
                 <version>${cashu-lib.version}</version>
+            </dependency>
+
+            <!-- Cashu Voucher Modules -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-voucher-domain</artifactId>
+                <version>${cashu-voucher.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-voucher-app</artifactId>
+                <version>${cashu-voucher.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-voucher-nostr</artifactId>
+                <version>${cashu-voucher.version}</version>
             </dependency>
 
             <!-- BIP Utils -->

@@ -4,7 +4,7 @@
     <parent>
         <groupId>xyz.tcheeric</groupId>
         <artifactId>cashu-wallet</artifactId>
-        <version>0.1.4</version>
+        <version>0.2.0</version>
     </parent>
 
     <artifactId>cashu-wallet-protocol</artifactId>
@@ -60,6 +60,22 @@
             <artifactId>bip-utils</artifactId>
             <version>2.0.0</version>
         </dependency>
+
+        <!-- Cashu Voucher Dependencies -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>cashu-voucher-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>cashu-voucher-app</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>cashu-voucher-nostr</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
