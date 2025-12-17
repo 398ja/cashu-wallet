@@ -137,6 +137,18 @@ try {
 - Conventional commits drive release notes and version bumps. Flag breaking changes with the `!` syntax or `BREAKING CHANGE:` footer.
 - Coordinate wallet releases with upstream mint/library changes to maintain compatibility.
 
+## Changelog Maintenance
+
+- **Always update `CHANGELOG.md`** after any version change or significant code modification.
+- Follow the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format:
+  - Group changes under: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`
+  - List versions in reverse chronological order (newest first)
+  - Use `[Unreleased]` section for changes not yet in a release
+  - Include the release date in ISO format: `## [1.0.0] - 2025-12-17`
+- Each entry should be a concise, human-readable description of the change
+- Reference related issues or PRs where applicable
+- Update the changelog in the same commit as the version bump when possible
+
 ## Project Research Notes
 - Review `NUT-13-IMPLEMENTATION-PLAN.md` before modifying deterministic recovery flows; reference its milestones in PR descriptions when applicable.
 - Historical migration notes live in `PR_BOM_MIGRATION.md`. Check this file before tweaking dependency alignment.
