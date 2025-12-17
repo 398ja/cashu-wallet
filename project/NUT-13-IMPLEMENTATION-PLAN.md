@@ -257,8 +257,8 @@ $ cashu recover --seed "witch collapse practice feed..." --include-vouchers
 ```
 
 #### See Also
-- [Voucher Implementation Plan](../cashu-mint/project/gift-card-plan-final-v2.md)
-- [Voucher README](../cashu-voucher/README.md)
+- [Voucher Implementation Plan](../../cashu-mint/project/gift-card-plan-final-v2.md)
+- [Voucher README](../../cashu-voucher/README.md)
 - Task 6.5: E2E test for NUT-13 + voucher integration
 - Task 5.12: Enhance RecoverWalletCmd with --include-vouchers flag
 
