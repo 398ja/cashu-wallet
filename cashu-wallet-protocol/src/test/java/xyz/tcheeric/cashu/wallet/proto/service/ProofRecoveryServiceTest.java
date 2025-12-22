@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.tcheeric.cashu.common.*;
+import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
 import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
 
 import java.util.ArrayList;
@@ -26,6 +27,12 @@ class ProofRecoveryServiceTest {
     private BDHKEUtilsService bdkhUtils;
 
     @Mock
+    private DLEQVerificationService dleqVerificationService;
+
+    @Mock
+    private CheckStateClient checkStateClient;
+
+    @Mock
     private KeySet keySet;
 
     @Mock
@@ -37,7 +44,13 @@ class ProofRecoveryServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProofRecoveryServiceImpl(bdkhUtils);
+        service = new ProofRecoveryServiceImpl(bdkhUtils, dleqVerificationService, checkStateClient);
+
+        lenient().when(dleqVerificationService.verifyBlindSignature(any(), any(), any())).thenReturn(true);
+        lenient().when(dleqVerificationService.verifyProof(any(), any())).thenReturn(true);
+        lenient().when(dleqVerificationService.addDLEQToProof(any(), any(), any()))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(checkStateClient.checkState(anyString(), any())).thenReturn(new PostCheckStateResponse());
 
         // Setup test data
         KeysetId keysetId = KeysetId.fromString("009a1f293253e41e");
@@ -341,6 +354,103 @@ class ProofRecoveryServiceTest {
         verify(bdkhUtils, times(1)).unblindSignature(any(), any(), any());
     }
 
+    /**
+     * Ensures spent-check filters out proofs marked as spent by the mint.
+     */
+    @Test
+    void shouldFilterOutSpentProofs() {
+        // Arrange
+        Proof<DeterministicSecret> proof1 = Proof.<DeterministicSecret>builder()
+            .amount(1)
+            .secret(testSecrets.get(0))
+            .keySetId("009a1f293253e41e")
+            .unblindedSignature(Signature.fromBytes(createCompressedKey()))
+            .build();
+        Proof<DeterministicSecret> proof2 = Proof.<DeterministicSecret>builder()
+            .amount(1)
+            .secret(testSecrets.get(1))
+            .keySetId("009a1f293253e41e")
+            .unblindedSignature(Signature.fromBytes(createCompressedKey()))
+            .build();
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        PostCheckStateResponse.ResponseState state1 = new PostCheckStateResponse.ResponseState();
+        state1.setHashToCurveSecret(new HashToCurveSecret(proof1));
+        state1.setState("UNSPENT");
+        PostCheckStateResponse.ResponseState state2 = new PostCheckStateResponse.ResponseState();
+        state2.setHashToCurveSecret(new HashToCurveSecret(proof2));
+        state2.setState("SPENT");
+        response.setStates(List.of(state1, state2));
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        List<Proof<DeterministicSecret>> filtered = service.filterUnspentProofs(
+            List.of(proof1, proof2),
+            "https://mint.example.com"
+        );
+
+        // Assert
+        assertThat(filtered).containsExactly(proof1);
+        verify(checkStateClient).checkState(eq("https://mint.example.com"), any());
+    }
+
+    /**
+     * Ensures DLEQ verification hooks are invoked when blind signatures include DLEQ data.
+     */
+    @Test
+    void shouldInvokeDleqVerificationWhenProofContainsDleq() {
+        // Arrange
+        PostRestoreResponse response = new PostRestoreResponse();
+        BlindSignature blindSignature = mock(BlindSignature.class);
+        Signature blindedSig = mock(Signature.class);
+        String eHex = "1".repeat(64);
+        String sHex = "2".repeat(64);
+        String rHex = "3".repeat(64);
+        DLEQProof dleqProof = DLEQProof.forBlindSignature(eHex, sHex);
+
+        lenient().when(blindSignature.getAmount()).thenReturn(1);
+        lenient().when(blindSignature.getKeySetId()).thenReturn(KeysetId.fromString("009a1f293253e41e"));
+        lenient().when(blindedSig.getBytes()).thenReturn(new byte[33]);
+        lenient().when(blindSignature.getBlindedSignature()).thenReturn(blindedSig);
+        when(blindSignature.hasDLEQProof()).thenReturn(true);
+        when(blindSignature.getDleq()).thenReturn(dleqProof);
+
+        response.setBlindSignatures(List.of(blindSignature));
+
+        when(keySet.getId()).thenReturn("009a1f293253e41e");
+        when(keySet.getKeys()).thenReturn(keys);
+
+        PublicKey mockPublicKey = mock(PublicKey.class);
+        when(mockPublicKey.getBytes()).thenReturn(new byte[33]);
+        when(keys.get(1)).thenReturn(mockPublicKey);
+
+        byte[] validSignature = new byte[64];
+        when(bdkhUtils.unblindSignature(any(), any(), any())).thenReturn(validSignature);
+        when(dleqVerificationService.verifyBlindSignature(any(), any(), any())).thenReturn(true);
+        when(dleqVerificationService.verifyProof(any(), any())).thenReturn(true);
+        when(dleqVerificationService.addDLEQToProof(any(), any(), any()))
+            .thenAnswer(invocation -> {
+                Proof<DeterministicSecret> proof = invocation.getArgument(0);
+                proof.setDleq(DLEQProof.forProof(eHex, sHex, rHex));
+                return proof;
+            });
+
+        // Act
+        List<Proof<DeterministicSecret>> proofs = service.unblindAndCreateProofs(
+            response,
+            testSecrets,
+            testBlindingFactors,
+            keySet
+        );
+
+        // Assert
+        assertThat(proofs).hasSize(1);
+        verify(dleqVerificationService).verifyBlindSignature(eq(blindSignature), any(PublicKey.class), eq(mockPublicKey));
+        verify(dleqVerificationService).addDLEQToProof(any(), eq(testBlindingFactors.get(0)), eq(dleqProof));
+        verify(dleqVerificationService).verifyProof(any(), eq(mockPublicKey));
+    }
+
     // Helper methods
 
     private List<BlindSignature> createMockBlindSignatures(int count) {
@@ -357,5 +467,11 @@ class ProofRecoveryServiceTest {
             signatures.add(sig);
         }
         return signatures;
+    }
+
+    private byte[] createCompressedKey() {
+        byte[] bytes = new byte[33];
+        bytes[0] = 0x02;
+        return bytes;
     }
 }

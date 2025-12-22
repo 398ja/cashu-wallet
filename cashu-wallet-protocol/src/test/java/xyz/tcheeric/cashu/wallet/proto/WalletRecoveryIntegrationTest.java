@@ -197,9 +197,10 @@ class WalletRecoveryIntegrationTest {
             assertThat(msg.getAmount()).isEqualTo(amount);
             assertThat(msg.getKeySetId()).isEqualTo(keysetId);
             assertThat(msg.getBlindedMessage()).isNotNull();
-            assertThat(msg.getBlindedMessage().getBytes()).isNotNull();
+            byte[] uncompressed = msg.getBlindedMessage().getUncompressedBytes();
+            assertThat(uncompressed).isNotNull();
             // Uncompressed public key should be 64 bytes (X and Y coordinates)
-            assertThat(msg.getBlindedMessage().getBytes()).hasSize(64);
+            assertThat(uncompressed).hasSize(64);
         });
     }
 

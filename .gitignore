@@ -26,3 +26,4 @@ replay_pid*
 /.claude/
 /cashu-wallet-client/target/
 /cashu-wallet-protocol/target/
+/project/
