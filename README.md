@@ -1,35 +1,39 @@
 # Cashu Wallet
 
-This project contains an experimental Java wallet for the [Cashu](https://github.com/cashubtc/cashu) eCash system. It focuses on the protocol around minting tokens as described in [NUT‑04](https://github.com/cashubtc/nuts/blob/main/04.md).
+Java 21 multi-module wallet implementation for the Cashu eCash protocol. Provides protocol orchestration, recovery tooling, and client services with NUT-09, NUT-12, and NUT-13 support.
 
 ## Version
+- Current project version: `0.4.0`
+- Java 21, Maven 3.9+
 
-- Current project version: `0.1.2`
-- Built with Java 21 and Maven.
+## Modules
+- `cashu-wallet-protocol`: Builders, tasks, and verification (DLEQ, restore, unblinding).
+- `cashu-wallet-client`: Spring-ready clients for mint endpoints and recovery flows.
+- `scripts/`: Helper scripts for manual mint interaction.
 
-## Minting Flow
+## Key capabilities
+- **Minting (NUT-04)**: Build blinded outputs, execute mint quotes, unblind into proofs.
+- **Deterministic recovery (NUT-09 + NUT-13)**: Derive secrets/blinding factors from mnemonics, rebuild blinded messages, unblind returned signatures.
+- **Offline verification (NUT-12)**: Verify mint blind signatures and received proofs with DLEQ proofs; attach `(e, s, r)` when sending.
+- **Spent-check (NUT-07)**: Optional `/checkstate` filter to drop proofs marked spent by the mint.
 
-Minting new tokens is a two step process:
-
-1. **Request a mint quote** using `POST /v1/mint/quote/{method}`.  The wallet specifies the payment method (e.g. `bolt11`) and the `unit` it wishes to mint.  The mint responds with a unique `quote` id and a payment `request`.
-2. **Execute the quote** after paying the request.  The wallet calls `POST /v1/mint/{method}` with the `quote` id and the blinded `outputs` that sum to the requested amount.  The mint verifies the payment and returns blind signatures.
-
-The wallet can check the state of a quote via `GET /v1/mint/quote/{method}/{quote_id}`.  Once the blind signatures are received, they are unblinded to produce spendable proofs.
-
-The mint's info endpoint (see NUT‑06) exposes which method‑unit pairs are supported and their limits.  New payment methods follow this pattern by defining their specific request/response fields and providing the three endpoints above.
-
-## Building
-
-The project uses Java 21 and Maven. Run tests with:
-
+## Build & test
 ```bash
 mvn -q verify
 ```
+Runs unit/integration tests and produces JaCoCo reports under each module’s `target/site/jacoco`.
 
-This also generates code coverage reports using JaCoCo in `target/site/jacoco` for each module.
+Module-only build:
+```bash
+mvn -q -pl cashu-wallet-protocol -am verify
+```
 
-Note that the build requires additional Cashu libraries which are not included in this repository.
+## Documentation
+- Tutorials, how-to, reference, and explanations live under `docs/`. Start at [docs/README.md](docs/README.md).
+  - Recovery tutorial: `docs/tutorials/recover-wallet.md`
+  - NUT-12 reference: `docs/reference/nut-12.md`
+  - Build & test guide: `docs/how-to/run-and-test.md`
+  - Architecture overview: `docs/explanation/architecture.md`
 
 ## License
-
-Released under the MIT License. See `LICENSE` for details.
+MIT – see `LICENSE`.
