@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.tcheeric.cashu.common.*;
 import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
 import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.wallet.proto.service.impl.ProofRecoveryServiceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
