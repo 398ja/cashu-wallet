@@ -15,7 +15,7 @@ import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
-import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryServiceImpl;
+import xyz.tcheeric.cashu.wallet.proto.service.impl.ProofRecoveryServiceImpl;
 import xyz.tcheeric.cashu.wallet.proto.tasks.DeriveSecretsTask;
 
 import java.util.ArrayList;
