@@ -1,4 +1,4 @@
-package xyz.tcheeric.cashu.wallet.proto.service;
+package xyz.tcheeric.cashu.wallet.proto.service.impl;
 
 import lombok.NonNull;
 import lombok.ToString;
@@ -10,8 +10,11 @@ import xyz.tcheeric.cashu.entities.annotation.Nut;
 import xyz.tcheeric.cashu.entities.rest.PostCheckStateRequest;
 import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
 import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
-import xyz.tcheeric.cashu.wallet.proto.service.impl.DefaultCheckStateClient;
-import xyz.tcheeric.cashu.wallet.proto.service.impl.DefaultDLEQVerificationService;
+import xyz.tcheeric.cashu.wallet.proto.service.BDHKEUtilsService;
+import xyz.tcheeric.cashu.wallet.proto.service.CheckStateClient;
+import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationException;
+import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationService;
+import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
 import xyz.tcheeric.cashu.wallet.proto.tasks.UnblindSignatureTask;
 
 import java.math.BigInteger;
