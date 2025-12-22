@@ -11,9 +11,8 @@ import xyz.tcheeric.cashu.common.Signature;
 import xyz.tcheeric.cashu.common.util.Task;
 import xyz.tcheeric.cashu.crypto.util.Utils;
 import xyz.tcheeric.cashu.wallet.proto.service.BDHKEUtilsService;
-import xyz.tcheeric.cashu.wallet.proto.service.BDHKEUtilsServiceImpl;
+import xyz.tcheeric.cashu.wallet.proto.service.impl.BDHKEUtilsServiceImpl;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
-import xyz.tcheeric.cashu.wallet.proto.nut.NUT04;
 
 import java.math.BigInteger;
 
