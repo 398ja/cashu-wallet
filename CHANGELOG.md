@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-12-23
+
+### Changed
+
+- Updated cashu-voucher dependency from 0.3.5 to 0.3.6
+
+---
+
 ## [0.4.0] - 2025-12-22
 ### Added
 - Completed NUT-12 wallet-side verification with a DLEQ verification service and default implementation for blind signatures and received proofs.
