@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-12-28
+
+### Changed
+
+- Updated cashu-voucher dependency from 0.3.6 to 0.3.7
+
+---
+
 ## [0.4.1] - 2025-12-23
 
 ### Changed
