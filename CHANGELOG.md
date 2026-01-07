@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-01-07
+
+### Changed
+
+- Updated cashu-lib dependency from 0.9.1 to 0.10.0
+- Updated cashu-voucher dependency from 0.3.7 to 0.4.0
+- Expanded Clean Code and Clean Architecture guidelines in AGENTS.md
+
+---
+
 ## [0.4.2] - 2025-12-28
 
 ### Changed
