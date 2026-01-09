@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.*;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
-import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryServiceImpl;
+import xyz.tcheeric.cashu.wallet.proto.service.impl.ProofRecoveryServiceImpl;
 
 import java.util.List;
 import java.util.Map;

@@ -12,7 +12,6 @@ import xyz.tcheeric.cashu.common.Proof;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
-import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryServiceImpl;
 
 import java.util.ArrayList;
 import java.util.List;

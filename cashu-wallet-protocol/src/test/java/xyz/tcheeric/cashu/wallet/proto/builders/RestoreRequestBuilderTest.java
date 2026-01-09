@@ -286,7 +286,7 @@ class RestoreRequestBuilderTest {
 
         // Then - each blinded message should have valid public key bytes
         for (BlindedMessage msg : blindedMessages) {
-            byte[] pkBytes = msg.getBlindedMessage().getBytes();
+            byte[] pkBytes = msg.getBlindedMessage().getUncompressedBytes();
             assertNotNull(pkBytes);
             // Uncompressed public key should be 64 bytes (X and Y coordinates)
             assertEquals(64, pkBytes.length,
