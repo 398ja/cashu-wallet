@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-01-10
+
+### Changed
+
+- Relocated `ProofRecoveryServiceImpl` to `impl` package
+- Relocated `BDHKEUtilsServiceImpl` to `impl` package
+- Updated cashu-lib dependency from 0.10.0 to 0.11.1
+- Updated cashu-voucher dependency from 0.4.0 to 0.5.0
+
+---
+
 ## [0.4.3] - 2026-01-07
 
 ### Changed
