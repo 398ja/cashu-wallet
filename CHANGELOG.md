@@ -4,16 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+---
+
+## [0.5.0] - 2026-01-21
+
 ### Added
 
-- **Virtual Thread Compatibility**: Full audit and documentation for Java 21+ Virtual Thread support.
+- **Virtual Thread Support**: Full Virtual Thread (Project Loom) support for Java 21+
+  - `VirtualThreadExecutors` utility class for creating VT-based executors
+  - Environment variable toggle (`CASHU_WALLET_VIRTUAL_THREADS_ENABLED`) for VT configuration
+  - Virtual Threads enabled by default for improved concurrency
   - VT compatibility documentation in `docs/explanation/virtual-thread-compatibility.md`
   - CI pinning detection with `-Djdk.tracePinnedThreads=short`
   - README section on Virtual Thread compatibility
+- **Load Testing Scripts**: k6 load test scripts for Virtual Thread baseline metrics
+  - `scripts/baseline-metrics.js` for baseline performance measurement
+  - `scripts/load-test-wallet.js` for comprehensive load testing
+- **Loom Documentation**: Comprehensive Virtual Thread rollout documentation
+  - Baseline performance results (`docs/loom/baseline-results.md`)
+  - Pilot comparison results (`docs/loom/pilot-results.md`)
+  - JFR analysis confirming no VT pinning (`docs/loom/jfr-analysis.md`)
+  - Staged production rollout plan (`docs/loom/rollout-plan.md`)
+  - Production results summary (`docs/loom/production-results.md`)
 
 ### Changed
 
 - Updated cashu-lib dependency from 0.11.1 to 0.12.0 (VT-ready with @ThreadSafe annotations)
+- `ParallelRecoveryService` now uses `VirtualThreadExecutors` for improved concurrency
 
 ---
 
