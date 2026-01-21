@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Virtual Thread Compatibility**: Full audit and documentation for Java 21+ Virtual Thread support.
+  - VT compatibility documentation in `docs/explanation/virtual-thread-compatibility.md`
+  - CI pinning detection with `-Djdk.tracePinnedThreads=short`
+  - README section on Virtual Thread compatibility
+
+### Changed
+
+- Updated cashu-lib dependency from 0.11.1 to 0.12.0 (VT-ready with @ThreadSafe annotations)
+
+---
+
 ## [0.4.4] - 2026-01-10
 
 ### Changed
