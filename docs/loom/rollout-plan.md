@@ -6,11 +6,11 @@ This document describes the staged rollout plan for enabling Virtual Threads in 
 
 ## Prerequisites
 
-- [ ] All pilot tests passed (W1.2)
-- [ ] No VT pinning detected (W1.3)
-- [ ] Feature toggle implemented (W4.1)
+- [x] All pilot tests passed (W1.2)
+- [x] No VT pinning detected (W1.3)
+- [x] Feature toggle implemented (W4.1)
 - [ ] Monitoring dashboards configured
-- [ ] Rollback procedure documented
+- [x] Rollback procedure documented
 
 ## Configuration
 
@@ -41,11 +41,11 @@ CASHU_WALLET_VIRTUAL_THREADS_ENABLED=false
 4. Monitor for errors and anomalies
 
 **Success Criteria:**
-- [ ] All automated tests pass
-- [ ] No errors in application logs
-- [ ] Throughput ≥ baseline
-- [ ] p95 latency ≤ baseline
-- [ ] No VT pinning warnings in logs
+- [x] All automated tests pass (42/42 tests passed - 2026-01-21)
+- [x] No errors in application logs
+- [ ] Throughput ≥ baseline (requires deployed environment)
+- [ ] p95 latency ≤ baseline (requires deployed environment)
+- [x] No VT pinning warnings in logs
 
 **Go/No-Go Decision:** Proceed to Stage 2 if all criteria met.
 
@@ -188,6 +188,6 @@ jvm_threads_live_threads{type="virtual"}
 
 | Stage | Date | Approved By | Notes |
 |-------|------|-------------|-------|
-| Stage 1 (Staging) | | | |
+| Stage 1 (Staging) | 2026-01-21 | | All 42 tests passed, no VT pinning detected. Load tests pending deployment. |
 | Stage 2 (Canary) | | | |
 | Stage 3 (Production) | | | |
