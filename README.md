@@ -17,11 +17,19 @@ Java 21 multi-module wallet implementation for the Cashu eCash protocol. Provide
 - **Offline verification (NUT-12)**: Verify mint blind signatures and received proofs with DLEQ proofs; attach `(e, s, r)` when sending.
 - **Spent-check (NUT-07)**: Optional `/checkstate` filter to drop proofs marked spent by the mint.
 
+## Virtual Thread Compatibility
+cashu-wallet is compatible with Java 21+ Virtual Threads (Project Loom):
+- No I/O-blocking synchronized blocks
+- Uses VT-compatible cashu-lib 0.12.0
+- CI includes VT pinning detection
+
+See [Virtual Thread Compatibility](docs/explanation/virtual-thread-compatibility.md) for details.
+
 ## Build & test
 ```bash
 mvn -q verify
 ```
-Runs unit/integration tests and produces JaCoCo reports under each module’s `target/site/jacoco`.
+Runs unit/integration tests and produces JaCoCo reports under each module's `target/site/jacoco`.
 
 Module-only build:
 ```bash

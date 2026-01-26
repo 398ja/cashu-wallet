@@ -4,7 +4,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>cashu-wallet</artifactId>
-    <version>0.4.4</version>
+    <version>0.6.0</version>
     <packaging>pom</packaging>
 
     <name>cashu-wallet</name>
@@ -42,7 +42,7 @@
         <maven.compiler.target>21</maven.compiler.target>
 
         <!-- Dependency Versions -->
-        <cashu-lib.version>0.11.1</cashu-lib.version>
+        <cashu-lib.version>0.13.0</cashu-lib.version>
         <cashu-voucher.version>0.5.0</cashu-voucher.version>
         <bip-utils.version>2.0.0</bip-utils.version>
         <spring-boot.version>3.5.5</spring-boot.version>
@@ -174,6 +174,10 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.4</version>
+                    <configuration>
+                        <!-- Enable Virtual Thread pinning detection during tests -->
+                        <argLine>-Djdk.tracePinnedThreads=short</argLine>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>

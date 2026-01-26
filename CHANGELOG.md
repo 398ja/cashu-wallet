@@ -4,6 +4,59 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+---
+
+## [0.6.0] - 2026-01-26
+
+### Added
+
+- **NUT-07 Proof State Verification**: New comprehensive verification methods
+  - `verifyProofsUnspent()` - Returns detailed verification result with categorized proofs (unspent/spent/unknown)
+  - `canSafelyDelete()` - Checks if proof can be safely deleted (only allows if SPENT)
+  - `ProofStateVerificationResult` - Record holding detailed verification results
+  - `SafeDeleteResult` - Record holding safe deletion check result with state info
+- Added 13 new unit tests for state verification methods
+
+### Changed
+
+- Updated cashu-lib dependency from 0.12.0 to 0.13.0
+
+### Security
+
+- Conservative error handling in proof state verification (preserves proofs on network errors)
+- Safe delete pattern prevents accidental deletion of unspent proofs
+- Support for both string ("SPENT"/"UNSPENT"/"PENDING") and numeric ("0"/"1"/"2") state formats
+
+---
+
+## [0.5.0] - 2026-01-21
+
+### Added
+
+- **Virtual Thread Support**: Full Virtual Thread (Project Loom) support for Java 21+
+  - `VirtualThreadExecutors` utility class for creating VT-based executors
+  - Environment variable toggle (`CASHU_WALLET_VIRTUAL_THREADS_ENABLED`) for VT configuration
+  - Virtual Threads enabled by default for improved concurrency
+  - VT compatibility documentation in `docs/explanation/virtual-thread-compatibility.md`
+  - CI pinning detection with `-Djdk.tracePinnedThreads=short`
+  - README section on Virtual Thread compatibility
+- **Load Testing Scripts**: k6 load test scripts for Virtual Thread baseline metrics
+  - `scripts/baseline-metrics.js` for baseline performance measurement
+  - `scripts/load-test-wallet.js` for comprehensive load testing
+- **Loom Documentation**: Comprehensive Virtual Thread rollout documentation
+  - Baseline performance results (`docs/loom/baseline-results.md`)
+  - Pilot comparison results (`docs/loom/pilot-results.md`)
+  - JFR analysis confirming no VT pinning (`docs/loom/jfr-analysis.md`)
+  - Staged production rollout plan (`docs/loom/rollout-plan.md`)
+  - Production results summary (`docs/loom/production-results.md`)
+
+### Changed
+
+- Updated cashu-lib dependency from 0.11.1 to 0.12.0 (VT-ready with @ThreadSafe annotations)
+- `ParallelRecoveryService` now uses `VirtualThreadExecutors` for improved concurrency
+
+---
+
 ## [0.4.4] - 2026-01-10
 
 ### Changed

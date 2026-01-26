@@ -80,4 +80,64 @@ public interface ProofRecoveryService {
             @NonNull List<Proof<DeterministicSecret>> proofs,
             @NonNull String mintUrl
     );
+
+    /**
+     * Verifies proof states and returns detailed verification results.
+     *
+     * <p>This method provides comprehensive state verification using NUT-07, returning
+     * detailed information about each proof's state rather than just filtering. This is
+     * useful when you need to know the exact state of each proof or handle errors gracefully.
+     *
+     * <p>Unlike {@link #filterUnspentProofs(List, String)}, this method:
+     * <ul>
+     *   <li>Returns detailed state information for each proof</li>
+     *   <li>Categorizes proofs as unspent, spent, or unknown</li>
+     *   <li>Captures verification errors without throwing exceptions</li>
+     *   <li>Provides the raw state map for debugging</li>
+     * </ul>
+     *
+     * @param proofs List of proofs to verify
+     * @param mintUrl Mint base URL for spent-check requests
+     * @return Verification result containing categorized proofs and state information
+     *
+     * @see ProofStateVerificationResult
+     * @see <a href="https://github.com/cashubtc/nuts/blob/main/07.md">NUT-07: Token State Check</a>
+     */
+    ProofStateVerificationResult verifyProofsUnspent(
+            @NonNull List<Proof<DeterministicSecret>> proofs,
+            @NonNull String mintUrl
+    );
+
+    /**
+     * Checks if a proof can be safely deleted.
+     *
+     * <p>This method verifies the proof's state with the mint using NUT-07 before
+     * allowing deletion. A proof should only be deleted if it has been confirmed
+     * as SPENT by the mint. Deleting unspent proofs would result in permanent loss of funds.
+     *
+     * <p>The method is conservative: if the state cannot be determined (network error,
+     * missing response, etc.), it will return a result indicating deletion is not safe.
+     *
+     * <p>Usage pattern:
+     * <pre>{@code
+     * SafeDeleteResult result = service.canSafelyDelete(proof, mintUrl);
+     * if (result.canDelete()) {
+     *     proofRepository.delete(proof);
+     *     log.info("Deleted spent proof");
+     * } else {
+     *     log.warn("Cannot delete proof: {}", result.reason());
+     * }
+     * }</pre>
+     *
+     * @param proof The proof to check for safe deletion
+     * @param mintUrl Mint base URL for state check request
+     * @return SafeDeleteResult indicating whether deletion is safe and why
+     *
+     * @see SafeDeleteResult
+     * @see <a href="https://github.com/cashubtc/nuts/blob/main/07.md">NUT-07: Token State Check</a>
+     */
+    SafeDeleteResult canSafelyDelete(
+            @NonNull Proof<DeterministicSecret> proof,
+            @NonNull String mintUrl
+    );
 }

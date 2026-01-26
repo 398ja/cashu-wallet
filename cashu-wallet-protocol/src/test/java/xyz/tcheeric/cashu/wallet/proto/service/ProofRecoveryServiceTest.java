@@ -1,11 +1,13 @@
 package xyz.tcheeric.cashu.wallet.proto.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.tcheeric.cashu.common.*;
+import xyz.tcheeric.cashu.entities.rest.PostCheckStateRequest;
 import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
 import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.proto.service.impl.ProofRecoveryServiceImpl;
@@ -452,7 +454,356 @@ class ProofRecoveryServiceTest {
         verify(dleqVerificationService).verifyProof(any(), eq(mockPublicKey));
     }
 
+    // ============================================
+    // Tests for verifyProofsUnspent (P1-WALLET-002)
+    // ============================================
+
+    /**
+     * Ensures verifyProofsUnspent returns empty result for empty input list.
+     */
+    @Test
+    void verifyProofsUnspent_shouldReturnEmptyResultForEmptyList() {
+        // Act
+        ProofStateVerificationResult result = service.verifyProofsUnspent(
+            List.of(),
+            "https://mint.example.com"
+        );
+
+        // Assert
+        assertThat(result.success()).isTrue();
+        assertThat(result.unspentProofs()).isEmpty();
+        assertThat(result.spentProofs()).isEmpty();
+        assertThat(result.unknownProofs()).isEmpty();
+        assertThat(result.allUnspent()).isTrue();
+        verifyNoInteractions(checkStateClient);
+    }
+
+    /**
+     * Ensures verifyProofsUnspent correctly categorizes all unspent proofs.
+     */
+    @Test
+    void verifyProofsUnspent_shouldCategorizeAllUnspentProofs() {
+        // Arrange
+        List<Proof<DeterministicSecret>> proofs = createTestProofs(3);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        List<PostCheckStateResponse.ResponseState> states = proofs.stream()
+            .map(proof -> {
+                PostCheckStateResponse.ResponseState state = new PostCheckStateResponse.ResponseState();
+                state.setHashToCurveSecret(new HashToCurveSecret(proof));
+                state.setState("UNSPENT");
+                return state;
+            })
+            .toList();
+        response.setStates(states);
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        ProofStateVerificationResult result = service.verifyProofsUnspent(
+            proofs,
+            "https://mint.example.com"
+        );
+
+        // Assert
+        assertThat(result.success()).isTrue();
+        assertThat(result.unspentProofs()).hasSize(3);
+        assertThat(result.spentProofs()).isEmpty();
+        assertThat(result.unknownProofs()).isEmpty();
+        assertThat(result.allUnspent()).isTrue();
+        assertThat(result.hasSpentProofs()).isFalse();
+    }
+
+    /**
+     * Ensures verifyProofsUnspent correctly categorizes mixed states.
+     */
+    @Test
+    void verifyProofsUnspent_shouldCategorizesMixedStates() {
+        // Arrange
+        List<Proof<DeterministicSecret>> proofs = createTestProofs(3);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        List<PostCheckStateResponse.ResponseState> states = new ArrayList<>();
+
+        // First proof: UNSPENT
+        PostCheckStateResponse.ResponseState state1 = new PostCheckStateResponse.ResponseState();
+        state1.setHashToCurveSecret(new HashToCurveSecret(proofs.get(0)));
+        state1.setState("UNSPENT");
+        states.add(state1);
+
+        // Second proof: SPENT
+        PostCheckStateResponse.ResponseState state2 = new PostCheckStateResponse.ResponseState();
+        state2.setHashToCurveSecret(new HashToCurveSecret(proofs.get(1)));
+        state2.setState("SPENT");
+        states.add(state2);
+
+        // Third proof: numeric UNSPENT (0)
+        PostCheckStateResponse.ResponseState state3 = new PostCheckStateResponse.ResponseState();
+        state3.setHashToCurveSecret(new HashToCurveSecret(proofs.get(2)));
+        state3.setState("0");
+        states.add(state3);
+
+        response.setStates(states);
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        ProofStateVerificationResult result = service.verifyProofsUnspent(
+            proofs,
+            "https://mint.example.com"
+        );
+
+        // Assert
+        assertThat(result.success()).isTrue();
+        assertThat(result.unspentProofs()).hasSize(2);
+        assertThat(result.spentProofs()).hasSize(1);
+        assertThat(result.unknownProofs()).isEmpty();
+        assertThat(result.allUnspent()).isFalse();
+        assertThat(result.hasSpentProofs()).isTrue();
+    }
+
+    /**
+     * Ensures verifyProofsUnspent handles network errors gracefully.
+     */
+    @Test
+    void verifyProofsUnspent_shouldReturnFailureOnNetworkError() {
+        // Arrange
+        List<Proof<DeterministicSecret>> proofs = createTestProofs(2);
+        when(checkStateClient.checkState(anyString(), any()))
+            .thenThrow(new RuntimeException("Network timeout"));
+
+        // Act
+        ProofStateVerificationResult result = service.verifyProofsUnspent(
+            proofs,
+            "https://mint.example.com"
+        );
+
+        // Assert
+        assertThat(result.success()).isFalse();
+        assertThat(result.errorMessage()).contains("Network timeout");
+        assertThat(result.unknownProofs()).hasSize(2);
+        assertThat(result.unspentProofs()).isEmpty();
+        assertThat(result.spentProofs()).isEmpty();
+    }
+
+    /**
+     * Ensures verifyProofsUnspent handles proofs with missing state in response.
+     */
+    @Test
+    void verifyProofsUnspent_shouldMarkMissingStatesAsUnknown() {
+        // Arrange
+        List<Proof<DeterministicSecret>> proofs = createTestProofs(2);
+
+        // Response only contains state for first proof
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        PostCheckStateResponse.ResponseState state1 = new PostCheckStateResponse.ResponseState();
+        state1.setHashToCurveSecret(new HashToCurveSecret(proofs.get(0)));
+        state1.setState("UNSPENT");
+        response.setStates(List.of(state1));
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        ProofStateVerificationResult result = service.verifyProofsUnspent(
+            proofs,
+            "https://mint.example.com"
+        );
+
+        // Assert
+        assertThat(result.success()).isTrue();
+        assertThat(result.unspentProofs()).hasSize(1);
+        assertThat(result.unknownProofs()).hasSize(1);
+        assertThat(result.hasUnknownProofs()).isTrue();
+    }
+
+    // ============================================
+    // Tests for canSafelyDelete (P1-WALLET-003)
+    // ============================================
+
+    /**
+     * Ensures canSafelyDelete allows deletion of spent proofs.
+     */
+    @Test
+    void canSafelyDelete_shouldAllowDeletionOfSpentProof() {
+        // Arrange
+        Proof<DeterministicSecret> proof = createTestProofs(1).get(0);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        PostCheckStateResponse.ResponseState state = new PostCheckStateResponse.ResponseState();
+        state.setHashToCurveSecret(new HashToCurveSecret(proof));
+        state.setState("SPENT");
+        response.setStates(List.of(state));
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        SafeDeleteResult result = service.canSafelyDelete(proof, "https://mint.example.com");
+
+        // Assert
+        assertThat(result.canDelete()).isTrue();
+        assertThat(result.isSpent()).isTrue();
+        assertThat(result.verificationSucceeded()).isTrue();
+        assertThat(result.reason()).contains("safe to delete");
+    }
+
+    /**
+     * Ensures canSafelyDelete allows deletion with numeric spent state (1).
+     */
+    @Test
+    void canSafelyDelete_shouldAllowDeletionWithNumericSpentState() {
+        // Arrange
+        Proof<DeterministicSecret> proof = createTestProofs(1).get(0);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        PostCheckStateResponse.ResponseState state = new PostCheckStateResponse.ResponseState();
+        state.setHashToCurveSecret(new HashToCurveSecret(proof));
+        state.setState("1"); // Numeric SPENT
+        response.setStates(List.of(state));
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        SafeDeleteResult result = service.canSafelyDelete(proof, "https://mint.example.com");
+
+        // Assert
+        assertThat(result.canDelete()).isTrue();
+        assertThat(result.isSpent()).isTrue();
+    }
+
+    /**
+     * Ensures canSafelyDelete prevents deletion of unspent proofs.
+     */
+    @Test
+    void canSafelyDelete_shouldPreventDeletionOfUnspentProof() {
+        // Arrange
+        Proof<DeterministicSecret> proof = createTestProofs(1).get(0);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        PostCheckStateResponse.ResponseState state = new PostCheckStateResponse.ResponseState();
+        state.setHashToCurveSecret(new HashToCurveSecret(proof));
+        state.setState("UNSPENT");
+        response.setStates(List.of(state));
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        SafeDeleteResult result = service.canSafelyDelete(proof, "https://mint.example.com");
+
+        // Assert
+        assertThat(result.canDelete()).isFalse();
+        assertThat(result.isUnspent()).isTrue();
+        assertThat(result.verificationSucceeded()).isTrue();
+        assertThat(result.reason()).contains("loss of funds");
+    }
+
+    /**
+     * Ensures canSafelyDelete prevents deletion of pending proofs.
+     */
+    @Test
+    void canSafelyDelete_shouldPreventDeletionOfPendingProof() {
+        // Arrange
+        Proof<DeterministicSecret> proof = createTestProofs(1).get(0);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        PostCheckStateResponse.ResponseState state = new PostCheckStateResponse.ResponseState();
+        state.setHashToCurveSecret(new HashToCurveSecret(proof));
+        state.setState("PENDING");
+        response.setStates(List.of(state));
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        SafeDeleteResult result = service.canSafelyDelete(proof, "https://mint.example.com");
+
+        // Assert
+        assertThat(result.canDelete()).isFalse();
+        assertThat(result.isPending()).isTrue();
+        assertThat(result.verificationSucceeded()).isTrue();
+        assertThat(result.reason()).contains("wait for state to settle");
+    }
+
+    /**
+     * Ensures canSafelyDelete prevents deletion when state is missing.
+     */
+    @Test
+    void canSafelyDelete_shouldPreventDeletionWhenStateMissing() {
+        // Arrange
+        Proof<DeterministicSecret> proof = createTestProofs(1).get(0);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        response.setStates(List.of()); // Empty states
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        SafeDeleteResult result = service.canSafelyDelete(proof, "https://mint.example.com");
+
+        // Assert
+        assertThat(result.canDelete()).isFalse();
+        assertThat(result.verificationSucceeded()).isTrue();
+        assertThat(result.reason()).contains("unknown or unrecognized");
+    }
+
+    /**
+     * Ensures canSafelyDelete prevents deletion on network error.
+     */
+    @Test
+    void canSafelyDelete_shouldPreventDeletionOnNetworkError() {
+        // Arrange
+        Proof<DeterministicSecret> proof = createTestProofs(1).get(0);
+        when(checkStateClient.checkState(anyString(), any()))
+            .thenThrow(new RuntimeException("Connection refused"));
+
+        // Act
+        SafeDeleteResult result = service.canSafelyDelete(proof, "https://mint.example.com");
+
+        // Assert
+        assertThat(result.canDelete()).isFalse();
+        assertThat(result.verificationSucceeded()).isFalse();
+        assertThat(result.reason()).contains("verification failed");
+        assertThat(result.reason()).contains("Connection refused");
+    }
+
+    /**
+     * Ensures canSafelyDelete handles unrecognized state values conservatively.
+     */
+    @Test
+    void canSafelyDelete_shouldPreventDeletionOnUnrecognizedState() {
+        // Arrange
+        Proof<DeterministicSecret> proof = createTestProofs(1).get(0);
+
+        PostCheckStateResponse response = new PostCheckStateResponse();
+        PostCheckStateResponse.ResponseState state = new PostCheckStateResponse.ResponseState();
+        state.setHashToCurveSecret(new HashToCurveSecret(proof));
+        state.setState("INVALID_STATE");
+        response.setStates(List.of(state));
+
+        when(checkStateClient.checkState(anyString(), any())).thenReturn(response);
+
+        // Act
+        SafeDeleteResult result = service.canSafelyDelete(proof, "https://mint.example.com");
+
+        // Assert
+        assertThat(result.canDelete()).isFalse();
+        assertThat(result.reason()).contains("unknown or unrecognized");
+    }
+
     // Helper methods
+
+    /**
+     * Creates test proofs for verification tests.
+     */
+    private List<Proof<DeterministicSecret>> createTestProofs(int count) {
+        List<Proof<DeterministicSecret>> proofs = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            proofs.add(Proof.<DeterministicSecret>builder()
+                .amount(1)
+                .secret(testSecrets.get(i % testSecrets.size()))
+                .keySetId("009a1f293253e41e")
+                .unblindedSignature(Signature.fromBytes(createCompressedKey()))
+                .build());
+        }
+        return proofs;
+    }
 
     private List<BlindSignature> createMockBlindSignatures(int count) {
         List<BlindSignature> signatures = new ArrayList<>();
