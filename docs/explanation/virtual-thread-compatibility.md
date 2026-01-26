@@ -58,9 +58,9 @@ To enable Virtual Threads in a Spring Boot application using cashu-wallet:
 spring.threads.virtual.enabled=true
 ```
 
-Or via environment variable:
+Or via environment variable (mapped to `spring.threads.virtual.enabled`):
 ```bash
-SPRING_THREADS_VIRTUAL_ENABLED=true
+CASHU_WALLET_VIRTUAL_THREADS_ENABLED=true
 ```
 
 ## Testing with Virtual Threads
