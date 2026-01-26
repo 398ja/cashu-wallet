@@ -7,6 +7,8 @@
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/DLEQVerificationException.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/DLEQVerificationService.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/ProofRecoveryService.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/ProofStateVerificationResult.java
+/home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/SafeDeleteResult.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/impl/BDHKEUtilsServiceImpl.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/impl/DefaultCheckStateClient.java
 /home/eric/IdeaProjects/cashu-wallet/cashu-wallet-protocol/src/main/java/xyz/tcheeric/cashu/wallet/proto/service/impl/DefaultDLEQVerificationService.java

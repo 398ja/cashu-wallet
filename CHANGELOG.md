@@ -6,6 +6,29 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.6.0] - 2026-01-26
+
+### Added
+
+- **NUT-07 Proof State Verification**: New comprehensive verification methods
+  - `verifyProofsUnspent()` - Returns detailed verification result with categorized proofs (unspent/spent/unknown)
+  - `canSafelyDelete()` - Checks if proof can be safely deleted (only allows if SPENT)
+  - `ProofStateVerificationResult` - Record holding detailed verification results
+  - `SafeDeleteResult` - Record holding safe deletion check result with state info
+- Added 13 new unit tests for state verification methods
+
+### Changed
+
+- Updated cashu-lib dependency from 0.12.0 to 0.13.0
+
+### Security
+
+- Conservative error handling in proof state verification (preserves proofs on network errors)
+- Safe delete pattern prevents accidental deletion of unspent proofs
+- Support for both string ("SPENT"/"UNSPENT"/"PENDING") and numeric ("0"/"1"/"2") state formats
+
+---
+
 ## [0.5.0] - 2026-01-21
 
 ### Added
