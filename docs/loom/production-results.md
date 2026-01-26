@@ -126,7 +126,7 @@ CompletableFuture<Map<KeysetId, List<Proof>>> future =
 | Dependency | Version | VT Compatible |
 |------------|---------|---------------|
 | cashu-lib | 0.12.0 | Yes (@ThreadSafe) |
-| Spring Boot | 3.5.6 | Yes |
+| Spring Boot | 3.5.5 | Yes |
 | Java | 21+ | Required |
 
 ## Next Steps
