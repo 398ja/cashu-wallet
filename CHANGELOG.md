@@ -30,7 +30,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Updated cashu-lib dependency from 0.11.1 to 0.12.0 (VT-ready with @ThreadSafe annotations)
-- `ParallelRecoveryService` now uses `VirtualThreadExecutors` for improved concurrency
+- `ParallelRecoveryService` documentation updated to recommend `VirtualThreadExecutors` for improved concurrency
 
 ---
 
