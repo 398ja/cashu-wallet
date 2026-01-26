@@ -9,7 +9,7 @@ This document describes the staged rollout plan for enabling Virtual Threads in 
 - [x] All pilot tests passed (W1.2)
 - [x] No VT pinning detected (W1.3)
 - [x] Feature toggle implemented (W4.1)
-- [ ] Monitoring dashboards configured
+- [ ] Monitoring dashboards configured *(in progress; temporarily not blocking limited Stage 3 production rollout, which is being monitored via existing infrastructure and log-based alerts)*
 - [x] Rollback procedure documented
 
 ## Configuration
