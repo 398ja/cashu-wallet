@@ -15,6 +15,8 @@ import xyz.tcheeric.cashu.wallet.proto.service.CheckStateClient;
 import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationException;
 import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationService;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
+import xyz.tcheeric.cashu.wallet.proto.service.ProofStateVerificationResult;
+import xyz.tcheeric.cashu.wallet.proto.service.SafeDeleteResult;
 import xyz.tcheeric.cashu.wallet.proto.tasks.UnblindSignatureTask;
 
 import java.math.BigInteger;
@@ -243,8 +245,138 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
         return unspent;
     }
 
+    @Override
+    public ProofStateVerificationResult verifyProofsUnspent(
+            @NonNull List<Proof<DeterministicSecret>> proofs,
+            @NonNull String mintUrl) {
+
+        if (proofs.isEmpty()) {
+            log.info("proof_verification skipped reason=no_proofs mint_url={}", mintUrl);
+            return ProofStateVerificationResult.empty();
+        }
+
+        try {
+            List<HashToCurveSecret> hashedSecrets = proofs.stream()
+                    .map(HashToCurveSecret::new)
+                    .toList();
+
+            PostCheckStateRequest request = new PostCheckStateRequest(hashedSecrets);
+            PostCheckStateResponse response = checkStateClient.checkState(mintUrl, request);
+
+            Map<String, String> stateBySecret = new HashMap<>();
+            Optional.ofNullable(response.getStates()).orElse(List.of()).forEach(state -> {
+                if (state.getHashToCurveSecret() != null && state.getState() != null) {
+                    stateBySecret.put(state.getHashToCurveSecret().toString(), state.getState());
+                }
+            });
+
+            List<Proof<DeterministicSecret>> unspentProofs = new ArrayList<>();
+            List<Proof<DeterministicSecret>> spentProofs = new ArrayList<>();
+            List<Proof<DeterministicSecret>> unknownProofs = new ArrayList<>();
+
+            for (Proof<DeterministicSecret> proof : proofs) {
+                String secretKey = new HashToCurveSecret(proof).toString();
+                String state = stateBySecret.get(secretKey);
+
+                if (state == null) {
+                    log.debug("proof_verification state_missing keyset={} amount={}",
+                            proof.getKeySetId(), proof.getAmount());
+                    unknownProofs.add(proof);
+                } else if (isUnspent(state)) {
+                    unspentProofs.add(proof);
+                } else if (isSpent(state)) {
+                    spentProofs.add(proof);
+                    log.debug("proof_verification proof_spent keyset={} amount={} state={}",
+                            proof.getKeySetId(), proof.getAmount(), state);
+                } else {
+                    log.debug("proof_verification state_unknown keyset={} amount={} state={}",
+                            proof.getKeySetId(), proof.getAmount(), state);
+                    unknownProofs.add(proof);
+                }
+            }
+
+            log.info("proof_verification completed mint_url={} unspent={} spent={} unknown={}",
+                    mintUrl, unspentProofs.size(), spentProofs.size(), unknownProofs.size());
+
+            return ProofStateVerificationResult.success(unspentProofs, spentProofs, unknownProofs, stateBySecret);
+
+        } catch (Exception e) {
+            log.error("proof_verification failed mint_url={} error={}", mintUrl, e.getMessage(), e);
+            return ProofStateVerificationResult.failure(e, proofs);
+        }
+    }
+
+    @Override
+    public SafeDeleteResult canSafelyDelete(
+            @NonNull Proof<DeterministicSecret> proof,
+            @NonNull String mintUrl) {
+
+        try {
+            List<HashToCurveSecret> hashedSecrets = List.of(new HashToCurveSecret(proof));
+            PostCheckStateRequest request = new PostCheckStateRequest(hashedSecrets);
+            PostCheckStateResponse response = checkStateClient.checkState(mintUrl, request);
+
+            String state = extractStateForProof(response, proof);
+
+            if (state == null) {
+                log.warn("safe_delete state_missing keyset={} amount={} action=preserve",
+                        proof.getKeySetId(), proof.getAmount());
+                return SafeDeleteResult.cannotDeleteUnknownState(proof, null);
+            }
+
+            if (isSpent(state)) {
+                log.debug("safe_delete proof_spent keyset={} amount={} action=allow_delete",
+                        proof.getKeySetId(), proof.getAmount());
+                return SafeDeleteResult.canDelete(proof, state);
+            }
+
+            if (isUnspent(state)) {
+                log.warn("safe_delete proof_unspent keyset={} amount={} action=preserve",
+                        proof.getKeySetId(), proof.getAmount());
+                return SafeDeleteResult.cannotDeleteUnspent(proof, state);
+            }
+
+            if (isPending(state)) {
+                log.warn("safe_delete proof_pending keyset={} amount={} action=preserve",
+                        proof.getKeySetId(), proof.getAmount());
+                return SafeDeleteResult.cannotDeletePending(proof, state);
+            }
+
+            log.warn("safe_delete state_unrecognized keyset={} amount={} state={} action=preserve",
+                    proof.getKeySetId(), proof.getAmount(), state);
+            return SafeDeleteResult.cannotDeleteUnknownState(proof, state);
+
+        } catch (Exception e) {
+            log.error("safe_delete verification_failed keyset={} amount={} error={} action=preserve",
+                    proof.getKeySetId(), proof.getAmount(), e.getMessage(), e);
+            return SafeDeleteResult.verificationFailed(proof, e);
+        }
+    }
+
+    private String extractStateForProof(PostCheckStateResponse response, Proof<DeterministicSecret> proof) {
+        String secretKey = new HashToCurveSecret(proof).toString();
+        return Optional.ofNullable(response.getStates())
+                .orElse(List.of())
+                .stream()
+                .filter(state -> state.getHashToCurveSecret() != null
+                        && secretKey.equals(state.getHashToCurveSecret().toString()))
+                .findFirst()
+                .map(PostCheckStateResponse.ResponseState::getState)
+                .orElse(null);
+    }
+
     private boolean isUnspent(String state) {
         String normalized = state.trim().toLowerCase();
         return "unspent".equals(normalized) || "0".equals(normalized);
+    }
+
+    private boolean isSpent(String state) {
+        String normalized = state.trim().toLowerCase();
+        return "spent".equals(normalized) || "1".equals(normalized);
+    }
+
+    private boolean isPending(String state) {
+        String normalized = state.trim().toLowerCase();
+        return "pending".equals(normalized) || "2".equals(normalized);
     }
 }
