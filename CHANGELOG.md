@@ -46,14 +46,14 @@ All notable changes to this project will be documented in this file.
 - **Loom Documentation**: Comprehensive Virtual Thread rollout documentation
   - Baseline performance results (`docs/loom/baseline-results.md`)
   - Pilot comparison results (`docs/loom/pilot-results.md`)
-  - JFR analysis confirming no VT pinning (`docs/loom/jfr-analysis.md`)
+  - Pinning detection analysis via console logs (`docs/loom/pinning-detection-analysis.md`)
   - Staged production rollout plan (`docs/loom/rollout-plan.md`)
   - Production results summary (`docs/loom/production-results.md`)
 
 ### Changed
 
 - Updated cashu-lib dependency from 0.11.1 to 0.12.0 (VT-ready with @ThreadSafe annotations)
-- `ParallelRecoveryService` now uses `VirtualThreadExecutors` for improved concurrency
+- `ParallelRecoveryService` documentation updated to recommend `VirtualThreadExecutors` for improved concurrency
 
 ---
 

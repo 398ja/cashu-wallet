@@ -53,7 +53,7 @@ This document captures the results of Virtual Thread adoption in cashu-wallet.
 | 6bd64f6 | VT compatibility audit, CI pinning detection |
 | 1a9539c | Enable VT in application.properties |
 | bd16968 | Pilot comparison results |
-| 4f3667b | JFR analysis (no pinning) |
+| 4f3667b | Pinning detection analysis (no pinning) |
 | 7535747 | VirtualThreadExecutors utility class |
 | 4bbeb5f | Environment variable feature toggle |
 | 807629e | Staged rollout plan |
@@ -69,7 +69,7 @@ docs/
 └── loom/
     ├── baseline-results.md                            (NEW)
     ├── pilot-results.md                               (NEW)
-    ├── jfr-analysis.md                                (NEW)
+    ├── pinning-detection-analysis.md                  (NEW)
     ├── rollout-plan.md                                (NEW)
     └── production-results.md                          (NEW)
 scripts/
@@ -126,7 +126,7 @@ CompletableFuture<Map<KeysetId, List<Proof>>> future =
 | Dependency | Version | VT Compatible |
 |------------|---------|---------------|
 | cashu-lib | 0.12.0 | Yes (@ThreadSafe) |
-| Spring Boot | 3.5.6 | Yes |
+| Spring Boot | 3.5.5 | Yes |
 | Java | 21+ | Required |
 
 ## Next Steps
