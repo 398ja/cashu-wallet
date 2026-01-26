@@ -9,7 +9,7 @@ Captured: 2026-01-21
 | Mint URL | http://localhost:7777/v1 |
 | Test Duration | 30s per scenario |
 | Tool | k6 via Docker (grafana/k6 v1.5.0) |
-| VT Setting | `SPRING_THREADS_VIRTUAL_ENABLED=true` |
+| VT Setting | `CASHU_WALLET_VIRTUAL_THREADS_ENABLED=true` |
 
 ## Results Summary
 
