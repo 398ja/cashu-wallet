@@ -6,6 +6,42 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.6.3] - 2026-01-28
+
+### Changed
+
+- Enhanced request tracing to log request ID and duration on both success and failure paths
+- Refactored `execute()` method into dedicated `executeGet()` and `executePost()` methods with proper try/catch blocks
+
+### Added
+
+- Unit tests for `execute()` behavior verifying X-Request-ID header injection, success/failure handling, and RestTemplate configuration (`AbstractRequestBaseExecuteTest`)
+
+---
+
+## [0.6.2] - 2026-01-28
+
+### Changed
+
+- Extracted HTTP timeout values into named constants (`CONNECT_TIMEOUT`, `READ_TIMEOUT`) to prevent configuration drift between code and log messages
+- Refactored shared RestTemplate initialization to use lazy loading pattern for improved test compatibility
+
+---
+
+## [0.6.1] - 2026-01-28
+
+### Added
+
+- **Request Tracing**: Shared `RestTemplate` instance with unique `X-Request-ID` header for request tracing
+- Enhanced logging with request execution times and request IDs
+
+### Changed
+
+- Updated cashu-lib dependency from 0.13.0 to 0.13.1
+- Refactored REST request execution to reuse connections with configurable timeouts (10s connect, 30s read)
+
+---
+
 ## [0.6.0] - 2026-01-26
 
 ### Added
