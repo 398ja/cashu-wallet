@@ -19,9 +19,6 @@ import java.util.UUID;
 @Slf4j
 public abstract class AbstractRequestBase<T, U> {
 
-    // Shared RestTemplate with proper configuration to avoid creating new instances per request
-    private static final RestTemplate SHARED_REST_TEMPLATE = createConfiguredRestTemplate();
-
     private final RestTemplate restTemplate;
     private final String baseUrl;
     private final String path;
@@ -39,21 +36,37 @@ public abstract class AbstractRequestBase<T, U> {
     // Request ID header for tracing
     public static final String REQUEST_ID_HEADER = "X-Request-ID";
 
+    // Timeout configuration
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
+
     /**
-     * Creates a properly configured RestTemplate with timeouts.
-     * This is shared across all requests to enable connection reuse.
+     * Lazy initialization holder for the shared RestTemplate.
+     * Uses initialization-on-demand holder idiom for thread-safe lazy initialization.
      */
-    private static RestTemplate createConfiguredRestTemplate() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(10));
-        factory.setReadTimeout(Duration.ofSeconds(30));
+    private static class RestTemplateHolder {
+        private static final RestTemplate INSTANCE = createConfiguredRestTemplate();
 
-        RestTemplate template = new RestTemplateBuilder()
-                .requestFactory(() -> factory)
-                .build();
+        private static RestTemplate createConfiguredRestTemplate() {
+            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(CONNECT_TIMEOUT);
+            factory.setReadTimeout(READ_TIMEOUT);
 
-        log.info("request_base shared_rest_template_created connect_timeout=10s read_timeout=30s");
-        return template;
+            RestTemplate template = new RestTemplateBuilder()
+                    .requestFactory(() -> factory)
+                    .build();
+
+            log.info("request_base shared_rest_template_created connect_timeout={}s read_timeout={}s",
+                    CONNECT_TIMEOUT.toSeconds(), READ_TIMEOUT.toSeconds());
+            return template;
+        }
+    }
+
+    /**
+     * Gets the shared RestTemplate instance. Lazily initialized on first access.
+     */
+    private static RestTemplate getSharedRestTemplate() {
+        return RestTemplateHolder.INSTANCE;
     }
 
     public AbstractRequestBase(@NonNull String baseUrl, @NonNull String path, Class<T> responseType) {
@@ -61,7 +74,7 @@ public abstract class AbstractRequestBase<T, U> {
     }
 
     public AbstractRequestBase(@NonNull String baseUrl, @NonNull String path, @NonNull String httpMethod, U requestObject, Class<T> responseType) {
-        this.restTemplate = SHARED_REST_TEMPLATE;  // Use shared instance
+        this.restTemplate = getSharedRestTemplate();  // Use shared instance (lazy initialized)
         this.baseUrl = baseUrl;
         this.path = path;
         this.httpMethod = httpMethod;
