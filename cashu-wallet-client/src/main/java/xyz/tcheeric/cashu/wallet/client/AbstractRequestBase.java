@@ -39,20 +39,25 @@ public abstract class AbstractRequestBase<T, U> {
     // Request ID header for tracing
     public static final String REQUEST_ID_HEADER = "X-Request-ID";
 
+    // Timeout configuration
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
+
     /**
      * Creates a properly configured RestTemplate with timeouts.
      * This is shared across all requests to enable connection reuse.
      */
     private static RestTemplate createConfiguredRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(10));
-        factory.setReadTimeout(Duration.ofSeconds(30));
+        factory.setConnectTimeout(CONNECT_TIMEOUT);
+        factory.setReadTimeout(READ_TIMEOUT);
 
         RestTemplate template = new RestTemplateBuilder()
                 .requestFactory(() -> factory)
                 .build();
 
-        log.info("request_base shared_rest_template_created connect_timeout=10s read_timeout=30s");
+        log.info("request_base shared_rest_template_created connect_timeout={}s read_timeout={}s",
+                CONNECT_TIMEOUT.toSeconds(), READ_TIMEOUT.toSeconds());
         return template;
     }
 
