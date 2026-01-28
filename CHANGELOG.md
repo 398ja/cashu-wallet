@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.6.1] - 2026-01-28
+
+### Added
+
+- **Request Tracing**: Shared `RestTemplate` instance with unique `X-Request-ID` header for request tracing
+- Enhanced logging with request execution times and request IDs
+
+### Changed
+
+- Updated cashu-lib dependency from 0.13.0 to 0.13.1
+- Refactored REST request execution to reuse connections with configurable timeouts (10s connect, 30s read)
+
+---
+
 ## [0.6.0] - 2026-01-26
 
 ### Added
