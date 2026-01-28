@@ -88,40 +88,56 @@ public abstract class AbstractRequestBase<T, U> {
         String url = baseUrl + path;
 
         return switch (httpMethod) {
-            case HTTP_METHOD_GET -> {
-                log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
-                    HTTP_METHOD_GET, url, requestId);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.set(REQUEST_ID_HEADER, requestId);
-                HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-                long startTime = System.currentTimeMillis();
-                ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.GET, entity, responseType);
-                long duration = System.currentTimeMillis() - startTime;
-
-                log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
-                    HTTP_METHOD_GET, url, requestId, duration);
-                yield response.getBody();
-            }
-            case HTTP_METHOD_POST -> {
-                log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
-                    HTTP_METHOD_POST, url, requestId);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.set(REQUEST_ID_HEADER, requestId);
-                headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-                HttpEntity<U> entity = new HttpEntity<>(this.requestObject, headers);
-
-                long startTime = System.currentTimeMillis();
-                ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
-                long duration = System.currentTimeMillis() - startTime;
-
-                log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
-                    HTTP_METHOD_POST, url, requestId, duration);
-                yield response.getBody();
-            }
+            case HTTP_METHOD_GET -> executeGet(url, requestId);
+            case HTTP_METHOD_POST -> executePost(url, requestId);
             default -> throw new IllegalArgumentException("Unsupported HTTP method: " + httpMethod);
         };
+    }
+
+    private T executeGet(String url, String requestId) {
+        log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
+                HTTP_METHOD_GET, url, requestId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(REQUEST_ID_HEADER, requestId);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        long startTime = System.currentTimeMillis();
+        try {
+            ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.GET, entity, responseType);
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
+                    HTTP_METHOD_GET, url, requestId, duration);
+            return response.getBody();
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            log.error("request_base request_failed method={} target={} request_id={} result=error duration_ms={} error={}",
+                    HTTP_METHOD_GET, url, requestId, duration, e.getMessage());
+            throw e;
+        }
+    }
+
+    private T executePost(String url, String requestId) {
+        log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
+                HTTP_METHOD_POST, url, requestId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(REQUEST_ID_HEADER, requestId);
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        HttpEntity<U> entity = new HttpEntity<>(this.requestObject, headers);
+
+        long startTime = System.currentTimeMillis();
+        try {
+            ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
+                    HTTP_METHOD_POST, url, requestId, duration);
+            return response.getBody();
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            log.error("request_base request_failed method={} target={} request_id={} result=error duration_ms={} error={}",
+                    HTTP_METHOD_POST, url, requestId, duration, e.getMessage());
+            throw e;
+        }
     }
 }

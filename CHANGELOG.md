@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.6.3] - 2026-01-28
+
+### Changed
+
+- Enhanced request tracing to log request ID and duration on both success and failure paths
+- Refactored `execute()` method into dedicated `executeGet()` and `executePost()` methods with proper try/catch blocks
+
+### Added
+
+- Unit tests for `execute()` behavior verifying X-Request-ID header injection, success/failure handling, and RestTemplate configuration (`AbstractRequestBaseExecuteTest`)
+
+---
+
 ## [0.6.2] - 2026-01-28
 
 ### Changed
