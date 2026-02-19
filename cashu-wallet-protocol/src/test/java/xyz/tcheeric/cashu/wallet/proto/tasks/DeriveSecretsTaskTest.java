@@ -4,7 +4,7 @@ import org.bitcoinj.crypto.DeterministicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import xyz.tcheeric.bips.bip39.Bip39;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeysetId;
 
 import java.util.Arrays;
@@ -273,5 +273,151 @@ class DeriveSecretsTaskTest {
             result1.getSecrets().get(0).getData(),
             result2.getSecrets().get(0).getData()
         )).isFalse();
+    }
+
+    // ========================================
+    // SW-02: Bounds validation tests
+    // ========================================
+
+    /**
+     * Ensures the task rejects count exceeding the maximum.
+     */
+    @Test
+    void shouldRejectCountExceedingMaximum() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(masterKey, keysetId, 0, 1_001))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("1000");
+    }
+
+    /**
+     * Ensures the task rejects zero count.
+     */
+    @Test
+    void shouldRejectZeroCount() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(masterKey, keysetId, 0, 0))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * Ensures the task rejects negative count.
+     */
+    @Test
+    void shouldRejectNegativeCount() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(masterKey, keysetId, 0, -1))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * Ensures the task rejects negative start counter.
+     */
+    @Test
+    void shouldRejectNegativeStartCounter() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(masterKey, keysetId, -1, 10))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("non-negative");
+    }
+
+    /**
+     * Ensures the task accepts maximum allowed count.
+     */
+    @Test
+    void shouldAcceptMaxAllowedCount() {
+        DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 1_000);
+        DeriveSecretsTask.DeriveSecretsResult result = task.execute();
+        assertThat(result.getSecrets()).hasSize(1_000);
+    }
+
+    // ========================================
+    // SW-04: Sensitive data cleanup tests
+    // ========================================
+
+    /**
+     * Ensures clearSensitiveData zeros all blinding factor byte arrays.
+     */
+    @Test
+    void shouldZeroBlindingFactorsOnClear() {
+        DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
+        DeriveSecretsTask.DeriveSecretsResult result = task.execute();
+
+        // Capture references to blinding factor arrays before clearing
+        List<byte[]> bfRefs = new java.util.ArrayList<>(result.getBlindingFactors());
+
+        // Verify blinding factors are non-zero before clear
+        for (byte[] bf : bfRefs) {
+            assertThat(bf).isNotEqualTo(new byte[32]);
+        }
+
+        result.clearSensitiveData();
+
+        // Verify all blinding factors are now zero (via captured references)
+        for (byte[] bf : bfRefs) {
+            assertThat(bf).isEqualTo(new byte[32]);
+        }
+
+        // Verify isCleared flag is set
+        assertThat(result.isCleared()).isTrue();
+    }
+
+    /**
+     * Ensures getBlindingFactors throws after clearSensitiveData has been called.
+     */
+    @Test
+    void shouldThrowWhenAccessingBlindingFactorsAfterClear() {
+        DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 3);
+        DeriveSecretsTask.DeriveSecretsResult result = task.execute();
+
+        result.clearSensitiveData();
+
+        assertThatThrownBy(result::getBlindingFactors)
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("cleared");
+    }
+
+    /**
+     * Ensures the constructor rejects null master key.
+     */
+    @Test
+    void shouldRejectNullMasterKey() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(null, keysetId, 0, 10))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Master key");
+    }
+
+    /**
+     * Ensures the constructor rejects null keyset ID.
+     */
+    @Test
+    void shouldRejectNullKeysetId() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(masterKey, null, 0, 10))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Keyset ID");
+    }
+
+    // ========================================
+    // SW-10: Unmodifiable list tests
+    // ========================================
+
+    /**
+     * Ensures getSecrets returns an unmodifiable list.
+     */
+    @Test
+    void shouldReturnUnmodifiableSecretsList() {
+        DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 3);
+        DeriveSecretsTask.DeriveSecretsResult result = task.execute();
+
+        assertThatThrownBy(() -> result.getSecrets().add(null))
+            .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    /**
+     * Ensures getBlindingFactors returns an unmodifiable list.
+     */
+    @Test
+    void shouldReturnUnmodifiableBlindingFactorsList() {
+        DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 3);
+        DeriveSecretsTask.DeriveSecretsResult result = task.execute();
+
+        assertThatThrownBy(() -> result.getBlindingFactors().add(null))
+            .isInstanceOf(UnsupportedOperationException.class);
     }
 }

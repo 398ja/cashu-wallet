@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.*;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.impl.ProofRecoveryServiceImpl;
 
@@ -222,8 +223,14 @@ class ParallelRecoveryServiceSimpleTest {
         keySet.setId(keysetId);
         Keys keys = new Keys();
         // Add a mock public key for amount 1
-        keys.put(java.math.BigInteger.ONE, mock(PublicKey.class));
+        keys.put(java.math.BigInteger.ONE, PublicKey.fromBytes(createCompressedKey()));
         keySet.setKeys(keys);
         return keySet;
+    }
+
+    private byte[] createCompressedKey() {
+        byte[] bytes = new byte[33];
+        bytes[0] = 0x02;
+        return bytes;
     }
 }

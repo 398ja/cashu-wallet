@@ -453,10 +453,9 @@ class MnemonicManagerTest {
     }
 
     @Test
-    @DisplayName("Should have correct valid word counts array")
-    void testValidWordCountsArray() {
-        int[] expected = {12, 15, 18, 21, 24};
-        assertArrayEquals(expected, MnemonicManager.VALID_WORD_COUNTS);
+    @DisplayName("Should have correct valid word counts list")
+    void testValidWordCountsList() {
+        assertEquals(java.util.List.of(12, 15, 18, 21, 24), MnemonicManager.getValidWordCounts());
     }
 
     // ========================================

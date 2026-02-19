@@ -1,10 +1,10 @@
 package xyz.tcheeric.cashu.wallet.proto.service;
 
 import lombok.NonNull;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeySet;
 import xyz.tcheeric.cashu.common.Proof;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 
 import java.util.List;
 

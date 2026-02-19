@@ -5,9 +5,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.BlindedMessage;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeysetId;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
 import xyz.tcheeric.cashu.wallet.proto.tasks.DeriveSecretsTask;
 
 import java.util.ArrayList;

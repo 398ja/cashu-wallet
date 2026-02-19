@@ -7,9 +7,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.tcheeric.cashu.common.*;
-import xyz.tcheeric.cashu.entities.rest.PostCheckStateRequest;
-import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.common.nut12.DLEQProof;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
+import xyz.tcheeric.cashu.entities.rest.nut07.PostCheckStateRequest;
+import xyz.tcheeric.cashu.entities.rest.nut07.PostCheckStateResponse;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.proto.service.impl.ProofRecoveryServiceImpl;
 
 import java.util.ArrayList;
@@ -145,8 +147,7 @@ class ProofRecoveryServiceTest {
         when(keySet.getKeys()).thenReturn(keys);
 
         // Mock public keys
-        PublicKey mockPublicKey = mock(PublicKey.class);
-        when(mockPublicKey.getBytes()).thenReturn(new byte[33]);
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
         when(keys.get(1)).thenReturn(mockPublicKey);  // Amount is 1 in createMockBlindSignatures
 
         // Mock unblinding - need valid 64-byte uncompressed signature (without prefix)
@@ -186,8 +187,7 @@ class ProofRecoveryServiceTest {
         when(keySet.getKeys()).thenReturn(keys);
 
         // Mock public keys
-        PublicKey mockPublicKey = mock(PublicKey.class);
-        when(mockPublicKey.getBytes()).thenReturn(new byte[33]);
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
         when(keys.get(1)).thenReturn(mockPublicKey);  // Amount is 1 in createMockBlindSignatures
 
         // Mock unblinding for valid factor
@@ -222,8 +222,7 @@ class ProofRecoveryServiceTest {
         when(keySet.getKeys()).thenReturn(keys);
 
         // First call returns null (missing public key), second returns valid key
-        PublicKey mockPublicKey = mock(PublicKey.class);
-        when(mockPublicKey.getBytes()).thenReturn(new byte[33]);
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
         when(keys.get(anyInt()))
             .thenReturn(null)
             .thenReturn(mockPublicKey);
@@ -260,8 +259,7 @@ class ProofRecoveryServiceTest {
         when(keySet.getKeys()).thenReturn(keys);
 
         // Mock public keys
-        PublicKey mockPublicKey = mock(PublicKey.class);
-        when(mockPublicKey.getBytes()).thenReturn(new byte[33]);
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
         when(keys.get(1)).thenReturn(mockPublicKey);  // Amount is 1 in createMockBlindSignatures
 
         // Mock unblinding - first throws exception, others succeed
@@ -336,8 +334,7 @@ class ProofRecoveryServiceTest {
         when(keySet.getKeys()).thenReturn(keys);
 
         // Mock public keys
-        PublicKey mockPublicKey = mock(PublicKey.class);
-        when(mockPublicKey.getBytes()).thenReturn(new byte[33]);
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
         when(keys.get(1)).thenReturn(mockPublicKey);  // Amount is 1 in createMockBlindSignatures
 
         // Mock unblinding
@@ -406,7 +403,7 @@ class ProofRecoveryServiceTest {
         // Arrange
         PostRestoreResponse response = new PostRestoreResponse();
         BlindSignature blindSignature = mock(BlindSignature.class);
-        Signature blindedSig = mock(Signature.class);
+        Signature blindedSig = Signature.fromBytes(createCompressedKey());
         String eHex = "1".repeat(64);
         String sHex = "2".repeat(64);
         String rHex = "3".repeat(64);
@@ -414,7 +411,6 @@ class ProofRecoveryServiceTest {
 
         lenient().when(blindSignature.getAmount()).thenReturn(1);
         lenient().when(blindSignature.getKeySetId()).thenReturn(KeysetId.fromString("009a1f293253e41e"));
-        lenient().when(blindedSig.getBytes()).thenReturn(new byte[33]);
         lenient().when(blindSignature.getBlindedSignature()).thenReturn(blindedSig);
         when(blindSignature.hasDLEQProof()).thenReturn(true);
         when(blindSignature.getDleq()).thenReturn(dleqProof);
@@ -424,8 +420,7 @@ class ProofRecoveryServiceTest {
         when(keySet.getId()).thenReturn("009a1f293253e41e");
         when(keySet.getKeys()).thenReturn(keys);
 
-        PublicKey mockPublicKey = mock(PublicKey.class);
-        when(mockPublicKey.getBytes()).thenReturn(new byte[33]);
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
         when(keys.get(1)).thenReturn(mockPublicKey);
 
         byte[] validSignature = new byte[64];
@@ -787,6 +782,89 @@ class ProofRecoveryServiceTest {
         assertThat(result.reason()).contains("unknown or unrecognized");
     }
 
+    // ============================================
+    // Tests for SW-06: Mint response validation
+    // ============================================
+
+    /**
+     * Ensures oversized blind signature response is truncated to secrets size.
+     */
+    @Test
+    void shouldWarnAndTruncateOversizedSignatureResponse() {
+        // Arrange - 5 signatures but only 3 secrets
+        PostRestoreResponse response = new PostRestoreResponse();
+        List<BlindSignature> blindSignatures = createMockBlindSignatures(5);
+        response.setBlindSignatures(blindSignatures);
+
+        when(keySet.getId()).thenReturn("009a1f293253e41e");
+        when(keySet.getKeys()).thenReturn(keys);
+
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
+        when(keys.get(1)).thenReturn(mockPublicKey);
+
+        byte[] validSignature = new byte[64];
+        when(bdkhUtils.unblindSignature(any(), any(), any())).thenReturn(validSignature);
+
+        // Act
+        List<Proof<DeterministicSecret>> proofs = service.unblindAndCreateProofs(
+            response,
+            testSecrets,
+            testBlindingFactors,
+            keySet
+        );
+
+        // Assert - should only process up to secrets.size() (3)
+        assertThat(proofs).hasSize(3);
+        verify(bdkhUtils, times(3)).unblindSignature(any(), any(), any());
+    }
+
+    /**
+     * Ensures signatures with mismatched keyset ID are skipped.
+     */
+    @Test
+    void shouldSkipSignatureWithMismatchedKeysetId() {
+        // Arrange
+        PostRestoreResponse response = new PostRestoreResponse();
+        List<BlindSignature> blindSignatures = new ArrayList<>();
+
+        // First signature with wrong keyset
+        BlindSignature wrongKeyset = mock(BlindSignature.class);
+        lenient().when(wrongKeyset.getAmount()).thenReturn(1);
+        when(wrongKeyset.getKeySetId()).thenReturn(KeysetId.fromString("aaaaaaaaaaaaaaaa"));
+        lenient().when(wrongKeyset.getBlindedSignature()).thenReturn(Signature.fromBytes(createCompressedKey()));
+        blindSignatures.add(wrongKeyset);
+
+        // Second signature with correct keyset
+        BlindSignature correctKeyset = mock(BlindSignature.class);
+        lenient().when(correctKeyset.getAmount()).thenReturn(1);
+        when(correctKeyset.getKeySetId()).thenReturn(KeysetId.fromString("009a1f293253e41e"));
+        lenient().when(correctKeyset.getBlindedSignature()).thenReturn(Signature.fromBytes(createCompressedKey()));
+        blindSignatures.add(correctKeyset);
+
+        response.setBlindSignatures(blindSignatures);
+
+        when(keySet.getId()).thenReturn("009a1f293253e41e");
+        when(keySet.getKeys()).thenReturn(keys);
+
+        PublicKey mockPublicKey = PublicKey.fromBytes(createCompressedKey());
+        when(keys.get(1)).thenReturn(mockPublicKey);
+
+        byte[] validSignature = new byte[64];
+        when(bdkhUtils.unblindSignature(any(), any(), any())).thenReturn(validSignature);
+
+        // Act
+        List<Proof<DeterministicSecret>> proofs = service.unblindAndCreateProofs(
+            response,
+            testSecrets,
+            testBlindingFactors,
+            keySet
+        );
+
+        // Assert - first signature should be skipped
+        assertThat(proofs).hasSize(1);
+        verify(bdkhUtils, times(1)).unblindSignature(any(), any(), any());
+    }
+
     // Helper methods
 
     /**
@@ -812,8 +890,7 @@ class ProofRecoveryServiceTest {
             lenient().when(sig.getAmount()).thenReturn(1);
             lenient().when(sig.getKeySetId()).thenReturn(KeysetId.fromString("009a1f293253e41e"));
 
-            Signature blindedSig = mock(Signature.class);
-            lenient().when(blindedSig.getBytes()).thenReturn(new byte[33]);
+            Signature blindedSig = Signature.fromBytes(createCompressedKey());
             lenient().when(sig.getBlindedSignature()).thenReturn(blindedSig);
 
             signatures.add(sig);

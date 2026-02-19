@@ -5,7 +5,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.crypto.DeterministicKey;
 import xyz.tcheeric.bips.bip39.Bip39;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeySet;
 import xyz.tcheeric.cashu.common.KeysetId;
 import xyz.tcheeric.cashu.common.Proof;

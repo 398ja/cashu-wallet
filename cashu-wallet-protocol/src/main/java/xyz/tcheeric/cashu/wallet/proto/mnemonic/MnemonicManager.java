@@ -6,6 +6,8 @@ import org.bitcoinj.crypto.DeterministicKey;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
 
+import java.util.List;
+
 /**
  * Utility class for managing BIP39 mnemonic phrases in the context of NUT-13
  * deterministic wallet recovery.
@@ -57,9 +59,18 @@ public final class MnemonicManager {
     public static final int DEFAULT_WORD_COUNT = 12;
 
     /**
-     * Valid BIP39 mnemonic word counts.
+     * Valid BIP39 mnemonic word counts (private to prevent external mutation).
      */
-    public static final int[] VALID_WORD_COUNTS = {12, 15, 18, 21, 24};
+    private static final int[] VALID_WORD_COUNTS = {12, 15, 18, 21, 24};
+
+    /**
+     * Returns an immutable list of valid BIP39 mnemonic word counts.
+     *
+     * @return immutable list containing 12, 15, 18, 21, 24
+     */
+    public static List<Integer> getValidWordCounts() {
+        return List.of(12, 15, 18, 21, 24);
+    }
 
     /**
      * Private constructor to prevent instantiation of utility class.
@@ -124,9 +135,8 @@ public final class MnemonicManager {
             return mnemonic;
 
         } catch (Exception e) {
-            log.error("mnemonic_generation_failed word_count={} error={}",
-                wordCount, e.getMessage());
-            throw new IllegalStateException("Failed to generate mnemonic: " + e.getMessage(), e);
+            log.error("mnemonic_generation_failed word_count={}", wordCount, e);
+            throw new IllegalStateException("Failed to generate mnemonic", e);
         }
     }
 
@@ -248,8 +258,8 @@ public final class MnemonicManager {
             return masterKey;
 
         } catch (Exception e) {
-            log.error("master_key_derivation_failed error={}", e.getMessage());
-            throw new IllegalStateException("Failed to derive master key: " + e.getMessage(), e);
+            log.error("master_key_derivation_failed", e);
+            throw new IllegalStateException("Failed to derive master key", e);
         }
     }
 
@@ -285,8 +295,8 @@ public final class MnemonicManager {
             return masterKey;
 
         } catch (Exception e) {
-            log.error("master_key_derivation_unsafe_failed error={}", e.getMessage());
-            throw new IllegalStateException("Failed to derive master key: " + e.getMessage(), e);
+            log.error("master_key_derivation_unsafe_failed", e);
+            throw new IllegalStateException("Failed to derive master key", e);
         }
     }
 

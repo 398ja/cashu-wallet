@@ -6,9 +6,10 @@ import org.junit.jupiter.api.Test;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.bips.bip32.nut.Nut13Derivation;
 import xyz.tcheeric.cashu.common.*;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.tasks.DeriveSecretsTask;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
 
 import java.util.List;
 

@@ -5,12 +5,12 @@ import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import xyz.tcheeric.cashu.common.BlindedMessage;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeysetId;
 import xyz.tcheeric.cashu.common.PublicKey;
 import xyz.tcheeric.cashu.crypto.BDHKEUtils;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
 
 import java.util.ArrayList;
 import java.util.List;

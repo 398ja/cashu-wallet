@@ -2,7 +2,7 @@ package xyz.tcheeric.cashu.wallet.client.service;
 
 import lombok.NonNull;
 import org.bitcoinj.crypto.DeterministicKey;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeySet;
 import xyz.tcheeric.cashu.common.KeysetId;
 import xyz.tcheeric.cashu.common.Proof;
@@ -79,6 +79,16 @@ public interface WalletRecoveryService {
      * Number of consecutive empty batches before stopping recovery for a keyset.
      */
     int MAX_EMPTY_BATCHES = 3;
+
+    /**
+     * Hard ceiling on counter value to prevent unbounded recovery loops.
+     */
+    int MAX_COUNTER = 100_000;
+
+    /**
+     * Maximum number of secrets to derive in a single batch.
+     */
+    int MAX_DERIVE_COUNT = 1_000;
 
     /**
      * Recovers wallet from mnemonic phrase.

@@ -1,7 +1,7 @@
 package xyz.tcheeric.cashu.wallet.proto.service;
 
-import xyz.tcheeric.cashu.entities.rest.PostCheckStateRequest;
-import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
+import xyz.tcheeric.cashu.entities.rest.nut07.PostCheckStateRequest;
+import xyz.tcheeric.cashu.entities.rest.nut07.PostCheckStateResponse;
 
 /**
  * Client for invoking the mint's NUT-07 /checkstate endpoint.

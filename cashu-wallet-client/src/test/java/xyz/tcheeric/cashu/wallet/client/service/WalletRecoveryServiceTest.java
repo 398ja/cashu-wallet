@@ -9,8 +9,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.*;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
@@ -56,7 +57,7 @@ class WalletRecoveryServiceTest {
         keySet = new KeySet();
         keySet.setId(TEST_KEYSET_ID);
         Keys keys = new Keys();
-        keys.put(java.math.BigInteger.ONE, mock(PublicKey.class));
+        keys.put(java.math.BigInteger.ONE, PublicKey.fromBytes(createCompressedKey()));
         keySet.setKeys(keys);
     }
 
@@ -104,7 +105,7 @@ class WalletRecoveryServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> service.recoverKeyset(masterKey, keysetId, keySet, 0, -1))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("positive");
+            .hasMessageContaining("Batch size");
     }
 
     /**
@@ -239,6 +240,59 @@ class WalletRecoveryServiceTest {
         assertThat(secretsCaptor.getAllValues().get(0)).hasSize(customBatchSize);
     }
 
+    /**
+     * Verifies recovery loop terminates when max counter is reached even if
+     * mint keeps returning non-empty responses.
+     */
+    @Test
+    void shouldStopRecoveryWhenMaxCounterReached() {
+        // Arrange - factory always returns non-empty response
+        when(requestBuilder.buildRequestFromSecrets(any(), any(), anyInt()))
+            .thenReturn(new PostRestoreRequest(List.of()));
+
+        PostRestoreResponse nonEmptyResponse = new PostRestoreResponse();
+        BlindSignature sig = mock(BlindSignature.class);
+        lenient().when(sig.getAmount()).thenReturn(1);
+        nonEmptyResponse.setBlindSignatures(List.of(sig));
+
+        when(proofRecoveryService.unblindAndCreateProofs(any(), any(), any(), any()))
+            .thenReturn(List.of());
+
+        RestoreClientFactory alwaysNonEmpty = (url, ks, req) -> new RequestRestore(url, req) {
+            @Override
+            public PostRestoreResponse execute() {
+                return nonEmptyResponse;
+            }
+        };
+
+        WalletRecoveryServiceImpl localService = serviceWithFactory(alwaysNonEmpty);
+
+        // Act - start at a counter near the limit to avoid long test
+        int nearLimit = WalletRecoveryService.MAX_COUNTER - 500;
+        List<Proof<DeterministicSecret>> proofs = localService.recoverKeyset(
+            masterKey,
+            keysetId,
+            keySet,
+            nearLimit,
+            100
+        );
+
+        // Assert - should have stopped at or near MAX_COUNTER, not run forever
+        assertThat(proofs).isEmpty();
+    }
+
+    /**
+     * Verifies that batch size exceeding MAX_DERIVE_COUNT is rejected at the API boundary.
+     */
+    @Test
+    void shouldRejectBatchSizeExceedingMaxDeriveCount() {
+        assertThatThrownBy(() -> service.recoverKeyset(
+            masterKey, keysetId, keySet, 0, WalletRecoveryService.MAX_DERIVE_COUNT + 1
+        ))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining(String.valueOf(WalletRecoveryService.MAX_DERIVE_COUNT));
+    }
+
     private WalletRecoveryServiceImpl serviceWithFactory(RestoreClientFactory factory) {
         return new WalletRecoveryServiceImpl(TEST_MINT_URL, requestBuilder, proofRecoveryService, factory);
     }
@@ -260,5 +314,11 @@ class WalletRecoveryServiceTest {
         PostRestoreResponse response = new PostRestoreResponse();
         response.setBlindSignatures(List.of());
         return response;
+    }
+
+    private byte[] createCompressedKey() {
+        byte[] bytes = new byte[33];
+        bytes[0] = 0x02;
+        return bytes;
     }
 }

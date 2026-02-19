@@ -1,7 +1,7 @@
 package xyz.tcheeric.cashu.wallet.proto.service;
 
 import lombok.NonNull;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.Proof;
 
 /**

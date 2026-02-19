@@ -2,7 +2,7 @@ package xyz.tcheeric.cashu.wallet.client.service;
 
 import lombok.NonNull;
 import org.bitcoinj.crypto.DeterministicKey;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeySet;
 import xyz.tcheeric.cashu.common.KeysetId;
 import xyz.tcheeric.cashu.common.Proof;
