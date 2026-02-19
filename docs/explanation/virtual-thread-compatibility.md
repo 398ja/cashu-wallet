@@ -45,8 +45,8 @@ No `ThreadLocal` fields were found in cashu-wallet modules.
 
 | Dependency | Version | VT Safe | Notes |
 |------------|---------|---------|-------|
-| cashu-lib | 0.12.0 | Yes | Audited with @ThreadSafe annotations |
-| Spring Boot | 3.5.5 | Yes | Full VT support with `spring.threads.virtual.enabled` |
+| cashu-lib | 0.16.0 | Yes | Audited with @ThreadSafe annotations |
+| Spring Boot | 3.5.11 | Yes | Full VT support with `spring.threads.virtual.enabled` |
 | Spring WebClient | (via Boot) | Yes | Uses non-blocking I/O |
 
 ## Enabling Virtual Threads
@@ -83,4 +83,5 @@ The CI pipeline automatically checks for VT pinning during test execution.
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| 0.5.0+ | VT Compatible | Updated to cashu-lib 0.12.0, added VT pinning detection |
+| 0.5.0+ | VT Compatible | Added VT pinning detection |
+| 0.6.4 | VT Compatible | Updated to cashu-lib 0.16.0, Spring Boot 3.5.11 |

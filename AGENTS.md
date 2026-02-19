@@ -35,11 +35,13 @@ cashu-wallet is a Java 21 multi-module project that implements the wallet protoc
   - [NUT-24](https://github.com/cashubtc/nuts/blob/main/24.md)
 
 ## Repository Layout
-- `pom.xml`: parent POM that imports the `cashu-platform-bom`, configures plugin management, and aggregates the modules. Keep dependency versions centralised here.
+- `pom.xml`: parent POM that manages dependency versions (via `<dependencyManagement>` and Spring Boot BOM import), configures plugin management, and aggregates the modules. Keep dependency versions centralised here.
 - `cashu-wallet-protocol/`: builders, services, and tasks that translate deterministic wallet state into Cashu protocol requests (mint, restore, melt).
 - `cashu-wallet-client/`: Spring-based client surfaces (REST adapters, recovery orchestrations, CLI support) built on top of the protocol module.
 - `scripts/`: helper scripts for manual testing and local mint interaction.
-- `NUT-13-IMPLEMENTATION-PLAN.md`: current roadmap for deterministic recovery work. Align any NUT-13 related changes with this plan.
+- `project/NUT-12-IMPLEMENTATION-PLAN.md`: roadmap for NUT-12 DLEQ verification work.
+- `project/security-implementation-plan.md`: security audit remediation plan.
+- `docs/developer/`: secure coding guidelines and security audit report.
 - `.github/`: PR template and workflow definitions. Follow the documented submission process.
 
 ## Tooling & Build
@@ -47,7 +49,7 @@ cashu-wallet is a Java 21 multi-module project that implements the wallet protoc
 - Run `mvn -q verify` from the repository root before sending a PR. This executes unit tests, integration tests, and aggregates JaCoCo reports.
 - Module-specific builds use `mvn -q -pl <module> -am verify`; include `-am` to compile dependencies.
 - JaCoCo reports live under each module’s `target/site/jacoco`. Share relevant coverage insights in PRs when touching critical paths.
-- Dependency and plugin versions are controlled by the `cashu-platform-bom`. Add new versions to the parent and let modules inherit them.
+- Dependency versions are centralised in the root `pom.xml` via `<dependencyManagement>` with the Spring Boot BOM imported for transitive alignment. Add new versions as properties in the parent and let modules inherit them.
 
 ## Coding
 
@@ -223,7 +225,7 @@ try {
 
 ## Versioning & Release
 - cashu-wallet follows semantic versioning. Update the root `pom.xml` version (and child module `<version>` tags when necessary) before releasing changes.
-- Keep the `cashu-platform-bom.version` property in sync with the platform repository. Document dependency bumps in `PR_BOM_MIGRATION.md` when applicable.
+- Keep the Spring Boot BOM version (`spring-boot.version`) and library versions (`cashu-lib.version`, etc.) in sync in the root `pom.xml`.
 - Conventional commits drive release notes and version bumps. Flag breaking changes with the `!` syntax or `BREAKING CHANGE:` footer.
 - Coordinate wallet releases with upstream mint/library changes to maintain compatibility.
 
@@ -239,9 +241,17 @@ try {
 - Reference related issues or PRs where applicable
 - Update the changelog in the same commit as the version bump when possible
 
+## Security
+- Follow the guidelines in `docs/developer/SECURE_CODING.md` for all contributions.
+- Validate all mint URLs using `MintUrlValidator` before constructing HTTP requests.
+- Bound loop counters and batch sizes using the constants in `WalletRecoveryService` (`MAX_COUNTER`, `MAX_DERIVE_COUNT`).
+- Zero sensitive byte arrays (blinding factors, keys) after use via `clearSensitiveData()` patterns.
+- Never expose internal exception details in thrown messages; preserve cause chains for diagnostics.
+- Return unmodifiable views from getters that expose internal collections.
+
 ## Project Research Notes
-- Review `NUT-13-IMPLEMENTATION-PLAN.md` before modifying deterministic recovery flows; reference its milestones in PR descriptions when applicable.
-- Historical migration notes live in `PR_BOM_MIGRATION.md`. Check this file before tweaking dependency alignment.
+- Review `project/NUT-12-IMPLEMENTATION-PLAN.md` before modifying DLEQ verification flows.
+- Review `project/security-implementation-plan.md` and `docs/developer/SECURITY_AUDIT_REPORT.md` before modifying security-sensitive code paths.
 - Scripts and ad-hoc experiments should capture their context in the relevant doc (tutorial, how-to, or explanation) once stabilised.
 
 ## Pre-Submit Checklist

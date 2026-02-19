@@ -24,7 +24,13 @@ Recreate blinded messages from a mnemonic, submit `/restore`, unblind returned s
 7. **Persist proofs**
    - Store returned proofs securely; they are now spendable tokens.
 
+## Security bounds
+- Recovery is bounded by `MAX_COUNTER` (100,000) — the loop stops automatically if the counter reaches this ceiling.
+- Each derivation batch is limited to `MAX_DERIVE_COUNT` (1,000) secrets per call to `DeriveSecretsTask`.
+- Blinding factors are zeroed after use via `clearSensitiveData()`. Accessing them after cleanup throws `IllegalStateException`.
+- Mint responses are validated: blind signature counts are truncated to match the request size, and keyset IDs are checked per signature.
+
 ## Notes
 - Amount is fixed in the builder example; adapt per your restore strategy.
 - DLEQ proofs are optional; when included they are mandatory to pass verification.
-- `/checkstate` requires mint availability; handle `IllegalStateException` to retry/back off.
+- `/checkstate` requires mint availability; requests have a 30-second default timeout. Handle `IllegalStateException` to retry/back off.

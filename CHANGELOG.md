@@ -21,21 +21,22 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Updated Spring Boot from 3.5.5 to 3.5.11 (resolves CVE-2025-55754 and CVE-2025-55752 in Tomcat)
 - Updated cashu-lib dependency from 0.13.1 to 0.16.0
 - Updated cashu-voucher dependency from 0.5.0 to 0.6.1
+- Updated bip-utils dependency from 1.0.0 to 2.0.0
 - Made `DefaultDLEQVerificationService` and `ProofRecoveryServiceImpl` final classes (SW-14)
 - Made `VALID_WORD_COUNTS` private with immutable `getValidWordCounts()` accessor (SW-11)
 - Encapsulated mutable state exports with defensive copies and unmodifiable views (SW-10)
 - Extracted `fetchStateMap()` helper to deduplicate `/checkstate` processing logic (SW-13)
 - Removed `@SuppressWarnings("ALL")` from `AbstractRequestBase` (SW-07)
+- Repository checksum policy set to `fail` for both releases and snapshots (SW-05)
 
 ### Added
 
 - `MintUrlValidator` utility class with `validate()` and `validateAndNormalize()` methods
-- OWASP `dependency-check-maven` plugin with `failBuildOnCVSS=7` (SW-05)
-- Repository checksum policy enforcement (SW-05)
-- Security audit report at `docs/developer/SECURITY_AUDIT_REPORT.md`
-- Aligned `SECURE_CODING.md` identity to cashu-wallet (SW-15)
+- `docs/developer/SECURE_CODING.md` — secure coding guidelines for the project
+- `docs/developer/SECURITY_AUDIT_REPORT.md` — full security audit report with remediation status (SW-15)
 
 ---
 

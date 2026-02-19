@@ -4,6 +4,7 @@ xyz/tcheeric/cashu/wallet/proto/service/impl/ProofRecoveryServiceImpl.class
 xyz/tcheeric/cashu/wallet/proto/service/ProofRecoveryService.class
 xyz/tcheeric/cashu/wallet/proto/service/ProofStateVerificationResult.class
 xyz/tcheeric/cashu/wallet/proto/state/DerivationStateManager.class
+xyz/tcheeric/cashu/wallet/proto/util/MintUrlValidator.class
 xyz/tcheeric/cashu/wallet/proto/state/InMemoryDerivationStateManager$KeysetState.class
 xyz/tcheeric/cashu/wallet/proto/service/DLEQVerificationService.class
 xyz/tcheeric/cashu/wallet/proto/builders/RestoreRequestBuilder.class

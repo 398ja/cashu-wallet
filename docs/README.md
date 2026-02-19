@@ -14,3 +14,15 @@ This folder organises project documentation according to the Diátaxis framework
 
 ## Explanation
 - [Architecture](explanation/architecture.md)
+- [Virtual Thread Compatibility](explanation/virtual-thread-compatibility.md)
+
+## Developer
+- [Secure Coding Guidelines](developer/SECURE_CODING.md)
+- [Security Audit Report](developer/SECURITY_AUDIT_REPORT.md)
+
+## Loom (Virtual Threads)
+- [Baseline Results](loom/baseline-results.md)
+- [Pilot Results](loom/pilot-results.md)
+- [Pinning Detection Analysis](loom/pinning-detection-analysis.md)
+- [Rollout Plan](loom/rollout-plan.md)
+- [Production Results](loom/production-results.md)
