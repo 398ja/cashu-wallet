@@ -6,6 +6,39 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.6.4] - 2026-02-19
+
+### Security
+
+- **SW-01**: Enforced mint URL trust boundary via new `MintUrlValidator` utility (SSRF prevention)
+- **SW-02**: Added hard limits to recovery loop (`MAX_COUNTER=100,000`) and derivation batch size (`MAX_DERIVE_COUNT=1,000`)
+- **SW-03**: Added 30-second request timeout to `/checkstate` HTTP calls
+- **SW-04**: Added `clearSensitiveData()` lifecycle for blinding factor byte arrays with try-finally cleanup
+- **SW-06**: Added mint response validation — signature count guard and keyset ID consistency checks
+- **SW-08**: Fixed interrupt handling — `Thread.currentThread().interrupt()` only for `InterruptedException`
+- **SW-09**: Sanitized exception messages to prevent upstream error text leakage
+- **SW-12**: Added `Math.addExact()` overflow guards for counter arithmetic
+
+### Changed
+
+- Updated cashu-lib dependency from 0.13.1 to 0.16.0
+- Updated cashu-voucher dependency from 0.5.0 to 0.6.1
+- Made `DefaultDLEQVerificationService` and `ProofRecoveryServiceImpl` final classes (SW-14)
+- Made `VALID_WORD_COUNTS` private with immutable `getValidWordCounts()` accessor (SW-11)
+- Encapsulated mutable state exports with defensive copies and unmodifiable views (SW-10)
+- Extracted `fetchStateMap()` helper to deduplicate `/checkstate` processing logic (SW-13)
+- Removed `@SuppressWarnings("ALL")` from `AbstractRequestBase` (SW-07)
+
+### Added
+
+- `MintUrlValidator` utility class with `validate()` and `validateAndNormalize()` methods
+- OWASP `dependency-check-maven` plugin with `failBuildOnCVSS=7` (SW-05)
+- Repository checksum policy enforcement (SW-05)
+- Security audit report at `docs/developer/SECURITY_AUDIT_REPORT.md`
+- Aligned `SECURE_CODING.md` identity to cashu-wallet (SW-15)
+
+---
+
 ## [0.6.3] - 2026-01-28
 
 ### Changed
