@@ -8,7 +8,7 @@ import java.net.URISyntaxException;
  *
  * <p>Enforces:
  * <ul>
- *   <li>Scheme must be {@code https} (or {@code http} only for localhost/127.0.0.1)</li>
+ *   <li>Scheme must be {@code https} (or {@code http} only for localhost/127.0.0.0&#47;8/[::1])</li>
  *   <li>No userinfo (e.g., {@code user:pass@host})</li>
  *   <li>No path traversal segments ({@code ..})</li>
  *   <li>Non-empty host</li>
@@ -69,9 +69,17 @@ public final class MintUrlValidator {
             throw new IllegalArgumentException("Mint URL must not contain userinfo (credentials in URL)");
         }
 
-        String path = uri.getPath();
+        // Normalize the URI to resolve any relative path segments, then check for traversal
+        URI normalized = uri.normalize();
+        String path = normalized.getPath();
         if (path != null && path.contains("..")) {
             throw new IllegalArgumentException("Mint URL must not contain path traversal segments");
+        }
+
+        // Also check the raw path for encoded traversal sequences (%2e%2e)
+        String rawPath = uri.getRawPath();
+        if (rawPath != null && rawPath.toLowerCase().contains("%2e")) {
+            throw new IllegalArgumentException("Mint URL must not contain encoded path traversal segments");
         }
     }
 
@@ -116,7 +124,10 @@ public final class MintUrlValidator {
 
     private static boolean isLocalhost(String host) {
         String lower = host.toLowerCase();
-        return "localhost".equals(lower) || "127.0.0.1".equals(lower);
+        return "localhost".equals(lower)
+            || lower.startsWith("127.")
+            || "::1".equals(lower)
+            || "[::1]".equals(lower);
     }
 
     private static String sanitize(String input) {

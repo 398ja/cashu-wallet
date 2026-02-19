@@ -339,17 +339,58 @@ class DeriveSecretsTaskTest {
         DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 5);
         DeriveSecretsTask.DeriveSecretsResult result = task.execute();
 
+        // Capture references to blinding factor arrays before clearing
+        List<byte[]> bfRefs = new java.util.ArrayList<>(result.getBlindingFactors());
+
         // Verify blinding factors are non-zero before clear
-        for (byte[] bf : result.getBlindingFactors()) {
+        for (byte[] bf : bfRefs) {
             assertThat(bf).isNotEqualTo(new byte[32]);
         }
 
         result.clearSensitiveData();
 
-        // Verify all blinding factors are now zero
-        for (byte[] bf : result.getBlindingFactors()) {
+        // Verify all blinding factors are now zero (via captured references)
+        for (byte[] bf : bfRefs) {
             assertThat(bf).isEqualTo(new byte[32]);
         }
+
+        // Verify isCleared flag is set
+        assertThat(result.isCleared()).isTrue();
+    }
+
+    /**
+     * Ensures getBlindingFactors throws after clearSensitiveData has been called.
+     */
+    @Test
+    void shouldThrowWhenAccessingBlindingFactorsAfterClear() {
+        DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 3);
+        DeriveSecretsTask.DeriveSecretsResult result = task.execute();
+
+        result.clearSensitiveData();
+
+        assertThatThrownBy(result::getBlindingFactors)
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("cleared");
+    }
+
+    /**
+     * Ensures the constructor rejects null master key.
+     */
+    @Test
+    void shouldRejectNullMasterKey() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(null, keysetId, 0, 10))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Master key");
+    }
+
+    /**
+     * Ensures the constructor rejects null keyset ID.
+     */
+    @Test
+    void shouldRejectNullKeysetId() {
+        assertThatThrownBy(() -> new DeriveSecretsTask(masterKey, null, 0, 10))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Keyset ID");
     }
 
     // ========================================

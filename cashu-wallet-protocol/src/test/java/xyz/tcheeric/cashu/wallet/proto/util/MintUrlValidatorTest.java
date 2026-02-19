@@ -111,4 +111,45 @@ class MintUrlValidatorTest {
         assertThatThrownBy(() -> MintUrlValidator.validateAndNormalize("ftp://evil.com"))
             .isInstanceOf(IllegalArgumentException.class);
     }
+
+    // --- Edge cases from code review ---
+
+    @Test
+    void shouldRejectUrlEncodedPathTraversal() {
+        assertThatThrownBy(() -> MintUrlValidator.validate("https://mint.example.com/%2e%2e/etc/passwd"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("traversal");
+    }
+
+    @Test
+    void shouldAcceptHttp127002AsLocalhost() {
+        assertThatCode(() -> MintUrlValidator.validate("http://127.0.0.2:3338"))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptHttpIpv6Localhost() {
+        assertThatCode(() -> MintUrlValidator.validate("http://[::1]:3338"))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectHttp127NotInLoopback() {
+        // 128.x.x.x is not a loopback address
+        assertThatThrownBy(() -> MintUrlValidator.validate("http://128.0.0.1:3338"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("localhost");
+    }
+
+    @Test
+    void shouldAcceptHttpsUrlWithQueryParams() {
+        assertThatCode(() -> MintUrlValidator.validate("https://mint.example.com/v1?param=value"))
+            .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptHttpsUrlWithFragment() {
+        assertThatCode(() -> MintUrlValidator.validate("https://mint.example.com/v1#section"))
+            .doesNotThrowAnyException();
+    }
 }

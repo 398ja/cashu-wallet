@@ -40,6 +40,12 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
     private final int count;
 
     public DeriveSecretsTask(DeterministicKey masterKey, KeysetId keysetId, int startCounter, int count) {
+        if (masterKey == null) {
+            throw new IllegalArgumentException("Master key must not be null");
+        }
+        if (keysetId == null) {
+            throw new IllegalArgumentException("Keyset ID must not be null");
+        }
         if (count <= 0 || count > MAX_COUNT) {
             throw new IllegalArgumentException(
                 String.format("Count must be between 1 and %d, got: %d", MAX_COUNT, count)
@@ -113,6 +119,7 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
 
         private final List<DeterministicSecret> secrets;
         private final List<byte[]> blindingFactors;
+        private volatile boolean cleared;
 
         public DeriveSecretsResult(List<DeterministicSecret> secrets, List<byte[]> blindingFactors) {
             this.secrets = secrets;
@@ -126,11 +133,19 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
 
         /** Returns an unmodifiable view of the blinding factors list. */
         public List<byte[]> getBlindingFactors() {
+            if (cleared) {
+                throw new IllegalStateException("Blinding factors have been cleared and can no longer be accessed");
+            }
             return Collections.unmodifiableList(blindingFactors);
         }
 
         public int getCount() {
             return secrets.size();
+        }
+
+        /** Returns true if sensitive data has been cleared. */
+        public boolean isCleared() {
+            return cleared;
         }
 
         public void validate() {
@@ -144,7 +159,7 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
 
         /**
          * Zeros all blinding factor byte arrays to minimize sensitive data lifetime in memory.
-         * Call after blinding factors have been consumed.
+         * After calling this method, {@link #getBlindingFactors()} will throw {@link IllegalStateException}.
          */
         public void clearSensitiveData() {
             for (byte[] bf : blindingFactors) {
@@ -152,6 +167,7 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
                     Arrays.fill(bf, (byte) 0);
                 }
             }
+            cleared = true;
         }
     }
 }

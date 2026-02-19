@@ -105,7 +105,7 @@ class WalletRecoveryServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> service.recoverKeyset(masterKey, keysetId, keySet, 0, -1))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("positive");
+            .hasMessageContaining("Batch size");
     }
 
     /**
@@ -279,6 +279,18 @@ class WalletRecoveryServiceTest {
 
         // Assert - should have stopped at or near MAX_COUNTER, not run forever
         assertThat(proofs).isEmpty();
+    }
+
+    /**
+     * Verifies that batch size exceeding MAX_DERIVE_COUNT is rejected at the API boundary.
+     */
+    @Test
+    void shouldRejectBatchSizeExceedingMaxDeriveCount() {
+        assertThatThrownBy(() -> service.recoverKeyset(
+            masterKey, keysetId, keySet, 0, WalletRecoveryService.MAX_DERIVE_COUNT + 1
+        ))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining(String.valueOf(WalletRecoveryService.MAX_DERIVE_COUNT));
     }
 
     private WalletRecoveryServiceImpl serviceWithFactory(RestoreClientFactory factory) {

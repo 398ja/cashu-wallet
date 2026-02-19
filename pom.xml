@@ -30,14 +30,14 @@
             <id>reposilite-snapshots</id>
             <url>https://maven.398ja.xyz/snapshots</url>
             <snapshots>
-                <checksumPolicy>warn</checksumPolicy>
+                <checksumPolicy>fail</checksumPolicy>
             </snapshots>
         </repository>
         <repository>
             <id>reposilite-releases</id>
             <url>https://maven.398ja.xyz/releases</url>
             <releases>
-                <checksumPolicy>warn</checksumPolicy>
+                <checksumPolicy>fail</checksumPolicy>
             </releases>
         </repository>
     </repositories>

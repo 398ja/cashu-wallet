@@ -186,8 +186,9 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
             int startCounter,
             int batchSize) {
 
-        if (batchSize <= 0) {
-            throw new IllegalArgumentException("Batch size must be positive, got: " + batchSize);
+        if (batchSize <= 0 || batchSize > MAX_DERIVE_COUNT) {
+            throw new IllegalArgumentException(
+                String.format("Batch size must be between 1 and %d, got: %d", MAX_DERIVE_COUNT, batchSize));
         }
 
         if (startCounter < 0) {
@@ -212,8 +213,11 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
 
             batchNumber++;
 
-            log.debug("wallet_recovery batch_processing_started keyset={} batch={} counter={} empty_batches={}",
-                keysetId, batchNumber, counter, emptyBatches);
+            // Clamp batch size to remaining counter budget so derivations never exceed MAX_COUNTER
+            int effectiveBatchSize = Math.min(batchSize, MAX_COUNTER - counter);
+
+            log.debug("wallet_recovery batch_processing_started keyset={} batch={} counter={} effective_batch_size={} empty_batches={}",
+                keysetId, batchNumber, counter, effectiveBatchSize, emptyBatches);
 
             DeriveSecretsTask.DeriveSecretsResult deriveResult = null;
             try {
@@ -222,7 +226,7 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
                     masterKey,
                     keysetId,
                     counter,
-                    batchSize
+                    effectiveBatchSize
                 );
                 deriveResult = deriveTask.execute();
 
