@@ -32,6 +32,9 @@
             <snapshots>
                 <checksumPolicy>fail</checksumPolicy>
             </snapshots>
+            <releases>
+                <checksumPolicy>fail</checksumPolicy>
+            </releases>
         </repository>
         <repository>
             <id>reposilite-releases</id>
@@ -39,6 +42,9 @@
             <releases>
                 <checksumPolicy>fail</checksumPolicy>
             </releases>
+            <snapshots>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
         </repository>
     </repositories>
 

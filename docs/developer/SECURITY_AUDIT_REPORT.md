@@ -1,4 +1,4 @@
-# Security Audit Report: cashu-wallet v0.6.3
+# Security Audit Report: cashu-wallet v0.6.3 (remediated in v0.6.4)
 
 **Date:** 2026-02-19  
 **Review Type:** Manual static security review with source verification  

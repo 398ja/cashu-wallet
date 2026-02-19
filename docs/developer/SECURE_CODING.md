@@ -64,7 +64,7 @@ This document outlines the mandatory secure coding practices for the `cashu-wall
 
 ## 6. Error Handling & Logging
 
-*   **Generic Errors:** specific error details (stack traces, internal paths) should NEVER be exposed to the client/API response. Return generic error codes/messages.
+*   **Generic Errors:** Specific error details (stack traces, internal paths) should NEVER be exposed to the client/API response. Return generic error codes/messages.
 *   **Audit Logging:** Log security-critical events (login attempts, failed authorization, sensitive data access).
 *   **Exception Blocks:** Do not suppress exceptions silently. Log them with sufficient context (internally).
 

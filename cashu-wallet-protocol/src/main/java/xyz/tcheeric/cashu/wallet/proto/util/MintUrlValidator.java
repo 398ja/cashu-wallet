@@ -56,7 +56,7 @@ public final class MintUrlValidator {
         } else if ("http".equals(scheme)) {
             if (!isLocalhost(host)) {
                 throw new IllegalArgumentException(
-                    "HTTP scheme is only allowed for localhost/127.0.0.1; use HTTPS for remote mints"
+                    "HTTP scheme is only allowed for localhost/127.0.0.0/8/[::1]; use HTTPS for remote mints"
                 );
             }
         } else {
@@ -69,16 +69,15 @@ public final class MintUrlValidator {
             throw new IllegalArgumentException("Mint URL must not contain userinfo (credentials in URL)");
         }
 
-        // Normalize the URI to resolve any relative path segments, then check for traversal
-        URI normalized = uri.normalize();
-        String path = normalized.getPath();
+        // Check the original path for traversal segments before normalization resolves them
+        String path = uri.getPath();
         if (path != null && path.contains("..")) {
             throw new IllegalArgumentException("Mint URL must not contain path traversal segments");
         }
 
-        // Also check the raw path for encoded traversal sequences (%2e%2e)
+        // Also check the raw path for encoded traversal sequences (%2e%2e or mixed variants)
         String rawPath = uri.getRawPath();
-        if (rawPath != null && rawPath.toLowerCase().contains("%2e")) {
+        if (rawPath != null && rawPath.toLowerCase().contains("%2e%2e")) {
             throw new IllegalArgumentException("Mint URL must not contain encoded path traversal segments");
         }
     }

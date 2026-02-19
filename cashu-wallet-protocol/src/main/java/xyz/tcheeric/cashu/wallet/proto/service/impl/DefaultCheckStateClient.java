@@ -39,6 +39,9 @@ public class DefaultCheckStateClient implements CheckStateClient {
     public DefaultCheckStateClient(HttpClient httpClient, Duration requestTimeout) {
         this.httpClient = Objects.requireNonNull(httpClient, "HttpClient cannot be null");
         this.requestTimeout = Objects.requireNonNull(requestTimeout, "Request timeout cannot be null");
+        if (requestTimeout.isZero() || requestTimeout.isNegative()) {
+            throw new IllegalArgumentException("Request timeout must be a positive duration");
+        }
     }
 
     @Override
