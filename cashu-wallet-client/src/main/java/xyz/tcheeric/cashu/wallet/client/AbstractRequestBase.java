@@ -11,10 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import xyz.tcheeric.cashu.wallet.proto.util.MintUrlValidator;
+
 import java.time.Duration;
 import java.util.UUID;
 
-@SuppressWarnings("ALL")
 @Getter
 @Slf4j
 public abstract class AbstractRequestBase<T, U> {
@@ -74,6 +75,7 @@ public abstract class AbstractRequestBase<T, U> {
     }
 
     public AbstractRequestBase(@NonNull String baseUrl, @NonNull String path, @NonNull String httpMethod, U requestObject, Class<T> responseType) {
+        MintUrlValidator.validate(baseUrl);
         this.restTemplate = getSharedRestTemplate();  // Use shared instance (lazy initialized)
         this.baseUrl = baseUrl;
         this.path = path;

@@ -4,12 +4,13 @@ import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import xyz.tcheeric.cashu.common.*;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.crypto.BDHKEUtils;
 import xyz.tcheeric.cashu.crypto.util.Utils;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
-import xyz.tcheeric.cashu.entities.rest.PostCheckStateRequest;
-import xyz.tcheeric.cashu.entities.rest.PostCheckStateResponse;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.entities.rest.nut07.PostCheckStateRequest;
+import xyz.tcheeric.cashu.entities.rest.nut07.PostCheckStateResponse;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.proto.service.BDHKEUtilsService;
 import xyz.tcheeric.cashu.wallet.proto.service.CheckStateClient;
 import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationException;
@@ -21,6 +22,7 @@ import xyz.tcheeric.cashu.wallet.proto.tasks.UnblindSignatureTask;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +45,7 @@ import java.util.Optional;
 @Nut(9)
 @Slf4j
 @ToString
-public class ProofRecoveryServiceImpl implements ProofRecoveryService {
+public final class ProofRecoveryServiceImpl implements ProofRecoveryService {
 
     /**
      * BDHKE utilities service for signature unblinding.
@@ -112,6 +114,13 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
             return List.of();  // No signatures to unblind
         }
 
+        // SW-06: Size guard - truncate oversized signature response
+        if (blindSignatures.size() > secrets.size()) {
+            log.warn("proof_recovery oversized_response keyset={} signatures={} secrets={} action=truncate",
+                keySet.getId(), blindSignatures.size(), secrets.size());
+            blindSignatures = blindSignatures.subList(0, secrets.size());
+        }
+
         log.info("proof_recovery unblinding_started keyset={} signatures_count={} secrets_count={}",
             keySet.getId(), blindSignatures.size(), secrets.size());
 
@@ -123,6 +132,13 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
             BlindSignature blindSig = blindSignatures.get(i);
             DeterministicSecret secret = secrets.get(i);
             byte[] blindingFactor = blindingFactors.get(i);
+
+            // SW-06: Verify keyset ID consistency
+            if (blindSig.getKeySetId() != null && !blindSig.getKeySetId().toString().equals(keySet.getId())) {
+                log.warn("proof_recovery keyset_id_mismatch index={} expected={} got={} action=skip_signature",
+                    i, keySet.getId(), blindSig.getKeySetId());
+                continue;
+            }
 
             try {
                 // Validate blinding factor
@@ -176,9 +192,13 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
                     i, proof.getAmount(), secret.getCounter(), proof.getKeySetId());
 
             } catch (DLEQVerificationException e) {
+                // SW-04: Zero blinding factor on DLEQ failure
+                Arrays.fill(blindingFactor, (byte) 0);
                 log.error("proof_recovery dleq_verification_failed index={} counter={} error={} action=skip_signature",
                     i, secret.getCounter(), e.getMessage(), e);
             } catch (Exception e) {
+                // SW-04: Zero blinding factor on failure
+                Arrays.fill(blindingFactor, (byte) 0);
                 log.error("proof_recovery unblinding_failed index={} counter={} error={} impact=continuing_batch",
                     i, secret.getCounter(), e.getMessage(), e);
                 // Continue processing other proofs - one failure shouldn't stop recovery
@@ -201,19 +221,7 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
             return List.of();
         }
 
-        List<HashToCurveSecret> hashedSecrets = proofs.stream()
-            .map(HashToCurveSecret::new)
-            .toList();
-
-        PostCheckStateRequest request = new PostCheckStateRequest(hashedSecrets);
-        PostCheckStateResponse response = checkStateClient.checkState(mintUrl, request);
-
-        Map<String, String> stateBySecret = new HashMap<>();
-        Optional.ofNullable(response.getStates()).orElse(List.of()).forEach(state -> {
-            if (state.getHashToCurveSecret() != null && state.getState() != null) {
-                stateBySecret.put(state.getHashToCurveSecret().toString(), state.getState());
-            }
-        });
+        Map<String, String> stateBySecret = fetchStateMap(proofs, mintUrl);
 
         if (stateBySecret.isEmpty()) {
             log.warn("proof_recovery spent_check_no_states mint_url={} action=return_all", mintUrl);
@@ -256,19 +264,7 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
         }
 
         try {
-            List<HashToCurveSecret> hashedSecrets = proofs.stream()
-                    .map(HashToCurveSecret::new)
-                    .toList();
-
-            PostCheckStateRequest request = new PostCheckStateRequest(hashedSecrets);
-            PostCheckStateResponse response = checkStateClient.checkState(mintUrl, request);
-
-            Map<String, String> stateBySecret = new HashMap<>();
-            Optional.ofNullable(response.getStates()).orElse(List.of()).forEach(state -> {
-                if (state.getHashToCurveSecret() != null && state.getState() != null) {
-                    stateBySecret.put(state.getHashToCurveSecret().toString(), state.getState());
-                }
-            });
+            Map<String, String> stateBySecret = fetchStateMap(proofs, mintUrl);
 
             List<Proof<DeterministicSecret>> unspentProofs = new ArrayList<>();
             List<Proof<DeterministicSecret>> spentProofs = new ArrayList<>();
@@ -304,6 +300,26 @@ public class ProofRecoveryServiceImpl implements ProofRecoveryService {
             log.error("proof_verification failed mint_url={} error={}", mintUrl, e.getMessage(), e);
             return ProofStateVerificationResult.failure(e, proofs);
         }
+    }
+
+    /**
+     * Fetches proof states from the mint's /checkstate endpoint and builds a lookup map.
+     */
+    private Map<String, String> fetchStateMap(List<Proof<DeterministicSecret>> proofs, String mintUrl) {
+        List<HashToCurveSecret> hashedSecrets = proofs.stream()
+            .map(HashToCurveSecret::new)
+            .toList();
+
+        PostCheckStateRequest request = new PostCheckStateRequest(hashedSecrets);
+        PostCheckStateResponse response = checkStateClient.checkState(mintUrl, request);
+
+        Map<String, String> stateBySecret = new HashMap<>();
+        Optional.ofNullable(response.getStates()).orElse(List.of()).forEach(state -> {
+            if (state.getHashToCurveSecret() != null && state.getState() != null) {
+                stateBySecret.put(state.getHashToCurveSecret().toString(), state.getState());
+            }
+        });
+        return stateBySecret;
     }
 
     @Override

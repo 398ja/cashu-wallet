@@ -5,7 +5,7 @@ import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.math.ec.ECPoint;
 import xyz.tcheeric.cashu.common.BlindSignature;
-import xyz.tcheeric.cashu.common.DLEQProof;
+import xyz.tcheeric.cashu.common.nut12.DLEQProof;
 import xyz.tcheeric.cashu.common.Proof;
 import xyz.tcheeric.cashu.common.PublicKey;
 import xyz.tcheeric.cashu.common.Secret;
@@ -21,7 +21,7 @@ import java.util.Objects;
  * Default implementation for verifying and attaching DLEQ proofs (NUT-12).
  */
 @Slf4j
-public class DefaultDLEQVerificationService implements DLEQVerificationService {
+public final class DefaultDLEQVerificationService implements DLEQVerificationService {
 
     private static final ECNamedCurveParameterSpec CURVE = ECNamedCurveTable.getParameterSpec("secp256k1");
 

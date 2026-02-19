@@ -1,7 +1,7 @@
 package xyz.tcheeric.cashu.wallet.proto.service;
 
 import xyz.tcheeric.cashu.common.BlindSignature;
-import xyz.tcheeric.cashu.common.DLEQProof;
+import xyz.tcheeric.cashu.common.nut12.DLEQProof;
 import xyz.tcheeric.cashu.common.Proof;
 import xyz.tcheeric.cashu.common.PublicKey;
 import xyz.tcheeric.cashu.common.Secret;

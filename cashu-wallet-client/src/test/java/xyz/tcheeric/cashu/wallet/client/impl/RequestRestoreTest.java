@@ -2,8 +2,8 @@ package xyz.tcheeric.cashu.wallet.client.impl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 
 import java.util.List;
 

@@ -1,17 +1,17 @@
 package xyz.tcheeric.cashu.wallet.proto.tasks;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.crypto.DeterministicKey;
 import xyz.tcheeric.bips.bip32.nut.Nut13Derivation;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeysetId;
 import xyz.tcheeric.cashu.common.util.Task;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,75 +24,36 @@ import java.util.List;
  * Blinding Factor: m/129372'/0'/{keyset_id_int}'/{counter}'/1
  * </pre>
  *
- * <p>The same mnemonic + keyset + counter combination will always produce the same secret
- * and blinding factor, enabling deterministic wallet recovery.
- *
- * <p><strong>Usage Example:</strong>
- * <pre>{@code
- * DeterministicKey masterKey = Bip39.mnemonicToMasterKey(mnemonic, passphrase);
- * KeysetId keysetId = new KeysetId("009a1f293253e41e");
- *
- * // Derive 100 secrets starting from counter 0
- * DeriveSecretsTask task = new DeriveSecretsTask(masterKey, keysetId, 0, 100);
- * DeriveSecretsResult result = task.execute();
- *
- * List<DeterministicSecret> secrets = result.getSecrets();
- * List<byte[]> blindingFactors = result.getBlindingFactors();
- * }</pre>
- *
  * @see <a href="https://github.com/cashubtc/nuts/blob/main/13.md">NUT-13: Deterministic Secrets</a>
- * @see Nut13Derivation
- * @see DeterministicSecret
- *
- * @author NUT-13 Implementation Team
- * @since 1.0.0
  */
 @Nut(13)
 @Slf4j
-@AllArgsConstructor
 @ToString(exclude = "masterKey") // Exclude sensitive key material from logs
 public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsResult> {
 
-    /**
-     * BIP32 master key derived from mnemonic phrase.
-     * This key is used as the root for all NUT-13 derivations.
-     */
+    /** Maximum number of secrets to derive in a single batch. */
+    private static final int MAX_COUNT = 1_000;
+
     private final DeterministicKey masterKey;
-
-    /**
-     * Keyset ID for which to derive secrets.
-     * This determines the keyset_id_int component in the derivation path.
-     */
     private final KeysetId keysetId;
-
-    /**
-     * Starting counter value for the first secret in this batch.
-     * The counter increments by 1 for each subsequent secret.
-     */
     private final int startCounter;
-
-    /**
-     * Number of secrets to derive in this batch.
-     * Recommended batch size is 100 per NUT-13 specification.
-     */
     private final int count;
 
-    /**
-     * Derives a batch of deterministic secrets and their corresponding blinding factors.
-     *
-     * <p>For each counter value from {@code startCounter} to {@code startCounter + count - 1},
-     * this method:
-     * <ol>
-     *   <li>Derives the secret using path: m/129372'/0'/{keyset_id_int}'/{counter}'/0</li>
-     *   <li>Derives the blinding factor using path: m/129372'/0'/{keyset_id_int}'/{counter}'/1</li>
-     *   <li>Creates a DeterministicSecret with metadata (keyset ID, counter, derivation path)</li>
-     * </ol>
-     *
-     * <p>The derivation is deterministic - the same inputs always produce the same outputs.
-     *
-     * @return DeriveSecretsResult containing lists of secrets and blinding factors
-     * @throws IllegalStateException if derivation fails due to invalid key or parameters
-     */
+    public DeriveSecretsTask(DeterministicKey masterKey, KeysetId keysetId, int startCounter, int count) {
+        if (count <= 0 || count > MAX_COUNT) {
+            throw new IllegalArgumentException(
+                String.format("Count must be between 1 and %d, got: %d", MAX_COUNT, count)
+            );
+        }
+        if (startCounter < 0) {
+            throw new IllegalArgumentException("Start counter must be non-negative, got: " + startCounter);
+        }
+        this.masterKey = masterKey;
+        this.keysetId = keysetId;
+        this.startCounter = startCounter;
+        this.count = count;
+    }
+
     @Override
     public DeriveSecretsResult execute() {
         log.info("derive_secrets task_started keyset={} start_counter={} count={}",
@@ -104,10 +65,10 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
         String keysetIdHex = keysetId.toString();
 
         for (int i = 0; i < count; i++) {
-            final int counter = startCounter + i;
+            // SW-12: overflow guard
+            final int counter = Math.addExact(startCounter, i);
 
             try {
-                // Derive both secret and blinding factor using Nut13Derivation
                 Nut13Derivation.SecretAndBlindingFactor pair =
                     Nut13Derivation.deriveSecretAndBlindingFactor(
                         masterKey,
@@ -115,7 +76,6 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
                         counter
                     );
 
-                // Create DeterministicSecret with metadata for tracking
                 DeterministicSecret secret = DeterministicSecret.create(
                     pair.secret(),
                     keysetId,
@@ -126,10 +86,11 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
                 blindingFactors.add(pair.blindingFactor());
 
             } catch (Exception e) {
-                log.error("derive_secrets task_failed keyset={} counter={} error={} impact=abort_batch",
-                    keysetId, counter, e.getMessage(), e);
+                log.error("derive_secrets task_failed keyset={} counter={} impact=abort_batch",
+                    keysetId, counter, e);
+                // SW-09: sanitized exception message
                 throw new IllegalStateException(
-                    String.format("Failed to derive secret at counter %d: %s", counter, e.getMessage()),
+                    String.format("Failed to derive secret at counter %d", counter),
                     e
                 );
             }
@@ -142,54 +103,54 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
     }
 
     /**
-     * Result record containing derived secrets and their corresponding blinding factors.
+     * Result containing derived secrets and their corresponding blinding factors.
      *
-     * <p>This record maintains a one-to-one correspondence between secrets and blinding factors:
-     * {@code secrets.get(i)} corresponds to {@code blindingFactors.get(i)} for all valid indices.
-     *
-     * <p>Both lists are guaranteed to have the same size, matching the {@code count} parameter
-     * from the task.
-     *
-     * @param secrets List of deterministic secrets with metadata (keyset ID, counter, path)
-     * @param blindingFactors List of blinding factors (32 bytes each) in the same order as secrets
+     * <p>Call {@link #clearSensitiveData()} after blinding factors have been consumed
+     * to zero sensitive key material from memory.
      */
-    @Getter
-    @AllArgsConstructor
     @ToString
     public static class DeriveSecretsResult {
 
-        /**
-         * Derived deterministic secrets with full metadata.
-         * Each secret includes its derivation path, counter, and keyset ID.
-         */
         private final List<DeterministicSecret> secrets;
-
-        /**
-         * Derived blinding factors (r values) corresponding to each secret.
-         * Each blinding factor is 32 bytes and matches the secret at the same index.
-         */
         private final List<byte[]> blindingFactors;
 
-        /**
-         * Returns the number of secrets/blinding factor pairs in this result.
-         *
-         * @return count of derived secrets (always equals blindingFactors.size())
-         */
+        public DeriveSecretsResult(List<DeterministicSecret> secrets, List<byte[]> blindingFactors) {
+            this.secrets = secrets;
+            this.blindingFactors = blindingFactors;
+        }
+
+        /** Returns an unmodifiable view of the secrets list. */
+        public List<DeterministicSecret> getSecrets() {
+            return Collections.unmodifiableList(secrets);
+        }
+
+        /** Returns an unmodifiable view of the blinding factors list. */
+        public List<byte[]> getBlindingFactors() {
+            return Collections.unmodifiableList(blindingFactors);
+        }
+
         public int getCount() {
             return secrets.size();
         }
 
-        /**
-         * Validates that secrets and blinding factors lists have matching sizes.
-         *
-         * @throws IllegalStateException if list sizes don't match
-         */
         public void validate() {
             if (secrets.size() != blindingFactors.size()) {
                 throw new IllegalStateException(String.format(
                     "Secrets and blinding factors count mismatch: secrets=%d, blindingFactors=%d",
                     secrets.size(), blindingFactors.size()
                 ));
+            }
+        }
+
+        /**
+         * Zeros all blinding factor byte arrays to minimize sensitive data lifetime in memory.
+         * Call after blinding factors have been consumed.
+         */
+        public void clearSensitiveData() {
+            for (byte[] bf : blindingFactors) {
+                if (bf != null) {
+                    Arrays.fill(bf, (byte) 0);
+                }
             }
         }
     }

@@ -2,8 +2,8 @@ package xyz.tcheeric.cashu.wallet.client.impl;
 
 import lombok.NonNull;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.client.AbstractRequestBase;
 
 /**

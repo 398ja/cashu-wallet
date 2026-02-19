@@ -1,11 +1,11 @@
 package xyz.tcheeric.cashu.wallet.client.impl;
 
 import lombok.NonNull;
-import xyz.tcheeric.cashu.common.PaymentMethod;
+import xyz.tcheeric.cashu.common.nut18.PaymentMethod;
 import xyz.tcheeric.cashu.common.Secret;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
-import xyz.tcheeric.cashu.entities.rest.PostMintRequest;
-import xyz.tcheeric.cashu.entities.rest.PostMintResponse;
+import xyz.tcheeric.cashu.entities.rest.nut04.PostMintRequest;
+import xyz.tcheeric.cashu.entities.rest.nut04.PostMintResponse;
 import xyz.tcheeric.cashu.wallet.client.AbstractRequestBase;
 
 @Nut(4)

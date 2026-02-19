@@ -5,13 +5,13 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.crypto.DeterministicKey;
 import xyz.tcheeric.bips.bip39.Bip39;
-import xyz.tcheeric.cashu.common.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
 import xyz.tcheeric.cashu.common.KeySet;
 import xyz.tcheeric.cashu.common.KeysetId;
 import xyz.tcheeric.cashu.common.Proof;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
@@ -126,8 +126,8 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
         try {
             masterKey = Bip39.mnemonicToMasterKey(mnemonic, passphrase);
         } catch (Exception e) {
-            log.error("wallet_recovery master_key_derivation_failed error={} impact=abort", e.getMessage(), e);
-            throw new IllegalStateException("Failed to derive master key from mnemonic: " + e.getMessage(), e);
+            log.error("wallet_recovery master_key_derivation_failed impact=abort", e);
+            throw new IllegalStateException("Failed to derive master key from mnemonic", e);
         }
 
         // Create a map for quick KeySet lookup by ID
@@ -203,11 +203,19 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
         int batchNumber = 0;
 
         while (emptyBatches < MAX_EMPTY_BATCHES) {
+            // SW-02: Hard ceiling on counter value to prevent unbounded recovery
+            if (counter >= MAX_COUNTER) {
+                log.warn("wallet_recovery max_counter_reached keyset={} counter={} limit={} action=stop_recovery",
+                    keysetId, counter, MAX_COUNTER);
+                break;
+            }
+
             batchNumber++;
 
             log.debug("wallet_recovery batch_processing_started keyset={} batch={} counter={} empty_batches={}",
                 keysetId, batchNumber, counter, emptyBatches);
 
+            DeriveSecretsTask.DeriveSecretsResult deriveResult = null;
             try {
                 // Step 1: Derive secrets and blinding factors for this batch
                 DeriveSecretsTask deriveTask = new DeriveSecretsTask(
@@ -216,7 +224,7 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
                     counter,
                     batchSize
                 );
-                DeriveSecretsTask.DeriveSecretsResult deriveResult = deriveTask.execute();
+                deriveResult = deriveTask.execute();
 
                 // Step 2: Create blinded messages
                 // Note: We use amount=1 as a default. In a real implementation, you might want
@@ -273,10 +281,15 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
                     log.warn("wallet_recovery batch_error_limit_reached keyset={} action=stop_recovery", keysetId);
                     break;
                 }
+            } finally {
+                // SW-04: Zero blinding factors after use
+                if (deriveResult != null) {
+                    deriveResult.clearSensitiveData();
+                }
             }
 
-            // Move to next batch
-            counter += batchSize;
+            // Move to next batch (SW-12: overflow guard)
+            counter = Math.addExact(counter, batchSize);
         }
 
         log.info("wallet_recovery keyset_recovery_finished keyset={} total_proofs={} batches_processed={}",

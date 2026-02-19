@@ -10,8 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.*;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreResponse;
+import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreResponse;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 import xyz.tcheeric.cashu.wallet.proto.builders.RestoreRequestBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.ProofRecoveryService;
@@ -399,7 +400,7 @@ class ParallelRecoveryServiceTest {
         KeySet keySet = new KeySet();
         keySet.setId(keysetId);
         Keys keys = new Keys();
-        keys.put(java.math.BigInteger.ONE, mock(PublicKey.class));
+        keys.put(java.math.BigInteger.ONE, PublicKey.fromBytes(createCompressedKey()));
         keySet.setKeys(keys);
         return keySet;
     }
@@ -457,7 +458,7 @@ class ParallelRecoveryServiceTest {
         BlindSignature sig = new BlindSignature();
         sig.setAmount(1);
         sig.setKeySetId(KeysetId.fromString(KEYSET_1));
-        sig.setBlindedSignature(mock(Signature.class));
+        sig.setBlindedSignature(Signature.fromBytes(createCompressedKey()));
         response.setBlindSignatures(List.of(sig));
         return response;
     }
@@ -471,5 +472,11 @@ class ParallelRecoveryServiceTest {
         lenient().when(secret.getKeysetId()).thenReturn(KeysetId.fromString(keysetId));
         lenient().when(proof.getSecret()).thenReturn(secret);
         return proof;
+    }
+
+    private byte[] createCompressedKey() {
+        byte[] bytes = new byte[33];
+        bytes[0] = 0x02;
+        return bytes;
     }
 }

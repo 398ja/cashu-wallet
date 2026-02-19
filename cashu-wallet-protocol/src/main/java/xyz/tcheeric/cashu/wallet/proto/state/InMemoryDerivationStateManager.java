@@ -345,7 +345,7 @@ public class InMemoryDerivationStateManager implements DerivationStateManager {
 
         public KeysetState(int counter, Set<Integer> mintRecords) {
             this.counter = counter;
-            this.mintRecords = mintRecords;
+            this.mintRecords = Collections.unmodifiableSet(new HashSet<>(mintRecords));
         }
     }
 }

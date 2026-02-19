@@ -1,7 +1,7 @@
 package xyz.tcheeric.cashu.wallet.client.service;
 
 import xyz.tcheeric.cashu.common.KeySet;
-import xyz.tcheeric.cashu.entities.rest.PostRestoreRequest;
+import xyz.tcheeric.cashu.entities.rest.nut09.PostRestoreRequest;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestRestore;
 
 /**
