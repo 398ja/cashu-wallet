@@ -470,7 +470,7 @@ The project is security-aware and structurally solid for a wallet library, but h
 | SW-02 | High | Recovery Loop / Derivation Bounds | Implemented | 51a65a8 | Added `MAX_COUNTER=100_000` and `MAX_DERIVE_COUNT=1_000` constants; counter ceiling in `recoverKeyset`; bounds validation in `DeriveSecretsTask` |
 | SW-03 | High | `/checkstate` Request Timeout | Implemented | 51a65a8 | Added `Duration.ofSeconds(30)` default timeout; configurable via constructor overload |
 | SW-04 | High | Sensitive Data Lifetime | Implemented | 51a65a8 | Added `clearSensitiveData()` to `DeriveSecretsResult`; zeroing in `ProofRecoveryServiceImpl`; try-finally cleanup in `WalletRecoveryServiceImpl` |
-| SW-05 | Medium | Build Supply-Chain Hardening | Implemented | 51a65a8 | Added OWASP `dependency-check-maven` plugin with `failBuildOnCVSS=7`; added `checksumPolicy=warn` to repositories |
+| SW-05 | Medium | Build Supply-Chain Hardening | Implemented | 51a65a8 | Added OWASP `dependency-check-maven` plugin with `failBuildOnCVSS=7` bound to verify phase; added `checksumPolicy=fail` to repositories |
 | SW-06 | Medium | Mint Response Validation | Implemented | 51a65a8 | Added signature count guard (truncate oversized); keyset ID consistency check per signature |
 | SW-07 | Medium | `@SuppressWarnings("ALL")` | Implemented | 51a65a8 | Removed blanket suppression from `AbstractRequestBase` |
 | SW-08 | Medium | Interrupt Handling | Implemented | 51a65a8 | Split catch blocks; `Thread.currentThread().interrupt()` only for `InterruptedException` |

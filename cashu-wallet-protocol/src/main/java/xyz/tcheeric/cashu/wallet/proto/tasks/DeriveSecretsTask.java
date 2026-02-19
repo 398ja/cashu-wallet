@@ -54,6 +54,13 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
         if (startCounter < 0) {
             throw new IllegalArgumentException("Start counter must be non-negative, got: " + startCounter);
         }
+        // Fail fast if the counter range would overflow during execution
+        try {
+            Math.addExact(startCounter, count - 1);
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException(
+                String.format("Counter range overflows: startCounter=%d, count=%d", startCounter, count), e);
+        }
         this.masterKey = masterKey;
         this.keysetId = keysetId;
         this.startCounter = startCounter;

@@ -27,8 +27,7 @@ This document outlines the mandatory secure coding practices for the `cashu-wall
 *   **APIs:** Use Java API equivalents (e.g., `java.nio.file`) instead of shell commands (e.g., `ls`, `rm`).
 
 ### Log Injection
-*   **Sanitize Logs:** Ensure user input written to logs does not contain newline characters (`
-`, ``) to prevent log forging.
+*   **Sanitize Logs:** Ensure user input written to logs does not contain newline characters (`\n`, `\r`) to prevent log forging.
 *   **Structured Logging:** Prefer structured logging (JSON) to mitigate format string attacks.
 
 ## 3. Cryptography & Secrets Management

@@ -86,8 +86,12 @@ public final class MintUrlValidator {
     /**
      * Validates and normalizes a mint URL by reconstructing it from parsed URI components.
      *
+     * <p>Note: Query parameters and fragments are intentionally stripped during normalization,
+     * as mint base URLs should not contain these components. Only scheme, host, port, and path
+     * are preserved.
+     *
      * @param mintUrl the URL to validate and normalize
-     * @return the normalized URL string
+     * @return the normalized URL string (without query or fragment)
      * @throws IllegalArgumentException if the URL violates validation rules
      */
     public static String validateAndNormalize(String mintUrl) {

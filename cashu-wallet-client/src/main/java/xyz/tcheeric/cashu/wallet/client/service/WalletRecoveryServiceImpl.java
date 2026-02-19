@@ -293,7 +293,7 @@ public class WalletRecoveryServiceImpl implements WalletRecoveryService {
             }
 
             // Move to next batch (SW-12: overflow guard)
-            counter = Math.addExact(counter, batchSize);
+            counter = Math.addExact(counter, effectiveBatchSize);
         }
 
         log.info("wallet_recovery keyset_recovery_finished keyset={} total_proofs={} batches_processed={}",
