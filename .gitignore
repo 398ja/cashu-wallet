@@ -23,3 +23,8 @@
 hs_err_pid*
 replay_pid*
 /.idea/
+/.claude/
+/cashu-wallet-client/target/
+/cashu-wallet-protocol/target/
+/project/
+/cashu-wallet-protocol/target/maven-status/

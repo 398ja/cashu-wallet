@@ -4,7 +4,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>cashu-wallet</artifactId>
-    <version>0.1.2</version>
+    <version>0.6.4</version>
     <packaging>pom</packaging>
 
     <name>cashu-wallet</name>
@@ -29,10 +29,22 @@
         <repository>
             <id>reposilite-snapshots</id>
             <url>https://maven.398ja.xyz/snapshots</url>
+            <snapshots>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+            <releases>
+                <checksumPolicy>fail</checksumPolicy>
+            </releases>
         </repository>
         <repository>
             <id>reposilite-releases</id>
             <url>https://maven.398ja.xyz/releases</url>
+            <releases>
+                <checksumPolicy>fail</checksumPolicy>
+            </releases>
+            <snapshots>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
         </repository>
     </repositories>
 
@@ -41,38 +53,107 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
 
-        <cashu-lib.version>0.2.0</cashu-lib.version>
-
-        <lombok.version>1.18.36</lombok.version>
-        <bcprov-jdk18on.version>1.72</bcprov-jdk18on.version>
-        <spring.boot.version>3.2.6</spring.boot.version>
-        <spring-context.version>6.2.8</spring-context.version>
-        <spring-boot-starter-data-rest.version>3.4.0</spring-boot-starter-data-rest.version>
-        <spring-boot-starter-test.version>3.5.0</spring-boot-starter-test.version>
-        <spring-boot-maven-plugin.version>3.5.3</spring-boot-maven-plugin.version>
-
-        <!-- Test Dependency Versions -->
-        <junit.version>5.9.1</junit.version>
-        <assertj.version>3.23.1</assertj.version>
-        <mockito-core.version>5.7.0</mockito-core.version>
-        <junit-jupiter-api.version>6.0.0-M2</junit-jupiter-api.version>
-        <mockito-junit-jupiter.version>5.17.0</mockito-junit-jupiter.version>
-
-
-        <!-- Maven Plugin Versions -->
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>2.22.2</maven-failsafe-plugin.version>
-        <flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
-        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+        <!-- Dependency Versions -->
+        <cashu-lib.version>0.16.0</cashu-lib.version>
+        <cashu-voucher.version>0.6.1</cashu-voucher.version>
+        <bip-utils.version>2.0.0</bip-utils.version>
+        <spring-boot.version>3.5.11</spring-boot.version>
+        <junit-jupiter.version>5.12.2</junit-jupiter.version>
+        <junit-platform.version>1.13.4</junit-platform.version>
+        <mockito.version>5.19.0</mockito.version>
+        <assertj.version>3.27.4</assertj.version>
+        <lombok.version>1.18.40</lombok.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Import Spring Boot BOM -->
             <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit.version}</version>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- JUnit BOM - imported AFTER Spring Boot to override mismatched versions -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit-jupiter.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Explicit JUnit Platform overrides -->
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-commons</artifactId>
+                <version>${junit-platform.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-engine</artifactId>
+                <version>${junit-platform.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-launcher</artifactId>
+                <version>${junit-platform.version}</version>
+            </dependency>
+
+            <!-- Cashu Library Modules -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-lib-entities</artifactId>
+                <version>${cashu-lib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-lib-crypto</artifactId>
+                <version>${cashu-lib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-lib-common</artifactId>
+                <version>${cashu-lib.version}</version>
+            </dependency>
+
+            <!-- Cashu Voucher Modules -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-voucher-domain</artifactId>
+                <version>${cashu-voucher.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-voucher-app</artifactId>
+                <version>${cashu-voucher.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>cashu-voucher-nostr</artifactId>
+                <version>${cashu-voucher.version}</version>
+            </dependency>
+
+            <!-- BIP Utils -->
+            <dependency>
+                <groupId>xyz.tcheeric</groupId>
+                <artifactId>bip-utils</artifactId>
+                <version>${bip-utils.version}</version>
+            </dependency>
+
+            <!-- Test Dependencies -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -81,23 +162,13 @@
                 <version>${assertj.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <!-- Annotation Processors -->
             <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>${mockito-core.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>${junit-jupiter-api.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-junit-jupiter</artifactId>
-                <version>${mockito-junit-jupiter.version}</version>
-                <scope>test</scope>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -105,86 +176,67 @@
     <build>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>flatten-maven-plugin</artifactId>
-                    <version>${flatten-maven-plugin.version}</version>
-                    <configuration>
-                        <updatePomFile>true</updatePomFile>
-                        <flattenMode>resolveCiFriendliesOnly</flattenMode>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>flatten</id>
-                            <phase>process-resources</phase>
-                            <goals>
-                                <goal>flatten</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>flatten.clean</id>
-                            <phase>clean</phase>
-                            <goals>
-                                <goal>clean</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
+                <!-- Import plugin management from cashu-platform-bom -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${maven-compiler-plugin.version}</version>
-                    <configuration>
-                        <showDeprecation>true</showDeprecation>
-                        <annotationProcessorPaths>
-                            <annotationProcessorPath>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok</artifactId>
-                                <version>${lombok.version}</version>
-                            </annotationProcessorPath>
-                        </annotationProcessorPaths>
-                    </configuration>
+                    <version>3.14.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${maven-failsafe-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>integration-test</goal>
-                                <goal>verify</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+                    <version>3.5.4</version>
+                    <configuration>
+                        <!-- Enable Virtual Thread pinning detection during tests -->
+                        <argLine>-Djdk.tracePinnedThreads=short</argLine>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>${jacoco-maven-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>prepare-agent</id>
-                            <goals>
-                                <goal>prepare-agent</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>report</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>report</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+                    <version>0.8.13</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>3.5.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>1.7.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>3.5.5</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>12.1.1</version>
+                    <configuration>
+                        <failBuildOnCVSS>7</failBuildOnCVSS>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+<!--
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+            </plugin>
+-->
+        </plugins>
     </build>
 
 </project>

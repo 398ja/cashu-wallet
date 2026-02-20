@@ -2,13 +2,22 @@ package xyz.tcheeric.cashu.wallet.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
-@SuppressWarnings("ALL")
+import xyz.tcheeric.cashu.wallet.proto.util.MintUrlValidator;
+
+import java.time.Duration;
+import java.util.UUID;
+
 @Getter
-@Log
+@Slf4j
 public abstract class AbstractRequestBase<T, U> {
 
     private final RestTemplate restTemplate;
@@ -16,7 +25,7 @@ public abstract class AbstractRequestBase<T, U> {
     private final String path;
     private final String httpMethod;
     private final U requestObject;
-    private final Class<T> responseType;  // Add this field
+    private final Class<T> responseType;
 
     private String serverAddress;
     private String serverPort;
@@ -25,25 +34,112 @@ public abstract class AbstractRequestBase<T, U> {
     protected final static String HTTP_METHOD_GET = "GET";
     protected final static String HTTP_METHOD_POST = "POST";
 
+    // Request ID header for tracing
+    public static final String REQUEST_ID_HEADER = "X-Request-ID";
+
+    // Timeout configuration
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
+
+    /**
+     * Lazy initialization holder for the shared RestTemplate.
+     * Uses initialization-on-demand holder idiom for thread-safe lazy initialization.
+     */
+    private static class RestTemplateHolder {
+        private static final RestTemplate INSTANCE = createConfiguredRestTemplate();
+
+        private static RestTemplate createConfiguredRestTemplate() {
+            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(CONNECT_TIMEOUT);
+            factory.setReadTimeout(READ_TIMEOUT);
+
+            RestTemplate template = new RestTemplateBuilder()
+                    .requestFactory(() -> factory)
+                    .build();
+
+            log.info("request_base shared_rest_template_created connect_timeout={}s read_timeout={}s",
+                    CONNECT_TIMEOUT.toSeconds(), READ_TIMEOUT.toSeconds());
+            return template;
+        }
+    }
+
+    /**
+     * Gets the shared RestTemplate instance. Lazily initialized on first access.
+     */
+    private static RestTemplate getSharedRestTemplate() {
+        return RestTemplateHolder.INSTANCE;
+    }
+
     public AbstractRequestBase(@NonNull String baseUrl, @NonNull String path, Class<T> responseType) {
         this(baseUrl, path, HTTP_METHOD_GET, null, responseType);
     }
 
     public AbstractRequestBase(@NonNull String baseUrl, @NonNull String path, @NonNull String httpMethod, U requestObject, Class<T> responseType) {
-        this.restTemplate = new RestTemplateBuilder().build();
+        MintUrlValidator.validate(baseUrl);
+        this.restTemplate = getSharedRestTemplate();  // Use shared instance (lazy initialized)
         this.baseUrl = baseUrl;
         this.path = path;
         this.httpMethod = httpMethod;
         this.requestObject = requestObject;
-        this.responseType = responseType;  // Initialize the field
+        this.responseType = responseType;
     }
 
-
     public T execute() {
+        // Generate unique request ID for tracing
+        String requestId = UUID.randomUUID().toString().substring(0, 8);
+        String url = baseUrl + path;
+
         return switch (httpMethod) {
-            case HTTP_METHOD_GET -> restTemplate.getForObject(baseUrl + path, responseType);
-            case HTTP_METHOD_POST -> restTemplate.postForObject(baseUrl + path, this.requestObject, responseType);
+            case HTTP_METHOD_GET -> executeGet(url, requestId);
+            case HTTP_METHOD_POST -> executePost(url, requestId);
             default -> throw new IllegalArgumentException("Unsupported HTTP method: " + httpMethod);
         };
+    }
+
+    private T executeGet(String url, String requestId) {
+        log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
+                HTTP_METHOD_GET, url, requestId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(REQUEST_ID_HEADER, requestId);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        long startTime = System.currentTimeMillis();
+        try {
+            ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.GET, entity, responseType);
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
+                    HTTP_METHOD_GET, url, requestId, duration);
+            return response.getBody();
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            log.error("request_base request_failed method={} target={} request_id={} result=error duration_ms={} error={}",
+                    HTTP_METHOD_GET, url, requestId, duration, e.getMessage());
+            throw e;
+        }
+    }
+
+    private T executePost(String url, String requestId) {
+        log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
+                HTTP_METHOD_POST, url, requestId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(REQUEST_ID_HEADER, requestId);
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        HttpEntity<U> entity = new HttpEntity<>(this.requestObject, headers);
+
+        long startTime = System.currentTimeMillis();
+        try {
+            ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
+                    HTTP_METHOD_POST, url, requestId, duration);
+            return response.getBody();
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            log.error("request_base request_failed method={} target={} request_id={} result=error duration_ms={} error={}",
+                    HTTP_METHOD_POST, url, requestId, duration, e.getMessage());
+            throw e;
+        }
     }
 }
