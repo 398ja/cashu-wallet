@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated cashu-lib to 0.21.0 (NUT-11 P2PK secret validation). Validation is fail-closed:
+  a malformed P2PK lock is now rejected at parse time rather than accepted and misbehaving later.
+
 ---
 
 ## [0.6.4] - 2026-02-19
