@@ -16,6 +16,7 @@ This folder organises project documentation according to the Diátaxis framework
 ## Explanation
 - [Architecture](explanation/architecture.md)
 - [Virtual Thread Compatibility](explanation/virtual-thread-compatibility.md)
+- [cashu-lib 0.22.0 secret encoding audit](explanation/cashu-lib-0.22.0-secret-encoding-audit.md)
 
 ## Developer
 - [Secure Coding Guidelines](developer/SECURE_CODING.md)

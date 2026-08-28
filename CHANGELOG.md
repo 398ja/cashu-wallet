@@ -14,6 +14,12 @@ All notable changes to this project will be documented in this file.
 - **W2 (NUT-12)**: `DLEQPolicy` derives from NUT-06 mint information, making a missing DLEQ
   proof a failure when the mint advertises NUT-12 support.
 - Documentation: [NUT-08 Lightning Fee Return](docs/reference/nut-08.md).
+- Audit of the cashu-lib 0.22.0 NUT-00 secret encoding changes, with a reproduction script
+  (`scripts/probe-secret-encoding.sh`) and findings in
+  [cashu-lib 0.22.0 secret encoding audit](docs/explanation/cashu-lib-0.22.0-secret-encoding-audit.md).
+  The upgrade is **blocked**: `DeterministicSecret.getData()` and `toString()` disagree under
+  0.22.0, so a wallet-issued proof commits to a different `Y` than the wallet reports to the
+  mint, breaking `/checkstate` and NUT-13 restore. `cashu-lib.version` stays at 0.21.0.
 
 ### Changed
 
