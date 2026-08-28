@@ -4,7 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **W3 (NUT-08)**: Melt now sends `max(ceil(log2(fee_reserve)), 1)` blank outputs and unblinds
+  the change the mint returns, recovering the routing fee the mint did not spend. Previously
+  the whole fee reserve was forfeited on every melt. New `BlankOutputBuilder`,
+  `MeltChangeService`, `WalletMeltService`, and `MeltResult`; blank output secrets are derived
+  deterministically (NUT-13) so the change is recoverable from the mnemonic.
+- **W2 (NUT-12)**: `DLEQPolicy` derives from NUT-06 mint information, making a missing DLEQ
+  proof a failure when the mint advertises NUT-12 support.
+- Documentation: [NUT-08 Lightning Fee Return](docs/reference/nut-08.md).
+
 ### Changed
+
+- **W2 (NUT-12)**: `DLEQVerificationService` returns `DLEQVerificationOutcome` instead of
+  `boolean`, so callers can distinguish `VERIFIED` from `NO_PROOF_PRESENT` rather than
+  treating an absent proof as a successful verification. **BREAKING** for direct callers of
+  `verifyBlindSignature` and `verifyProof`.
 
 - Updated cashu-lib to 0.21.0 (NUT-11 P2PK secret validation). Validation is fail-closed:
   a malformed P2PK lock is now rejected at parse time rather than accepted and misbehaving later.

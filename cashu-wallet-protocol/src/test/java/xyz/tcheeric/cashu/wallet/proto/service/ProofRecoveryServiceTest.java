@@ -51,8 +51,8 @@ class ProofRecoveryServiceTest {
     void setUp() {
         service = new ProofRecoveryServiceImpl(bdkhUtils, dleqVerificationService, checkStateClient);
 
-        lenient().when(dleqVerificationService.verifyBlindSignature(any(), any(), any())).thenReturn(true);
-        lenient().when(dleqVerificationService.verifyProof(any(), any())).thenReturn(true);
+        lenient().when(dleqVerificationService.verifyBlindSignature(any(), any(), any())).thenReturn(DLEQVerificationOutcome.VERIFIED);
+        lenient().when(dleqVerificationService.verifyProof(any(), any())).thenReturn(DLEQVerificationOutcome.VERIFIED);
         lenient().when(dleqVerificationService.addDLEQToProof(any(), any(), any()))
             .thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(checkStateClient.checkState(anyString(), any())).thenReturn(new PostCheckStateResponse());
@@ -412,7 +412,7 @@ class ProofRecoveryServiceTest {
         lenient().when(blindSignature.getAmount()).thenReturn(1);
         lenient().when(blindSignature.getKeySetId()).thenReturn(KeysetId.fromString("009a1f293253e41e"));
         lenient().when(blindSignature.getBlindedSignature()).thenReturn(blindedSig);
-        when(blindSignature.hasDLEQProof()).thenReturn(true);
+        lenient().when(blindSignature.hasDLEQProof()).thenReturn(true);
         when(blindSignature.getDleq()).thenReturn(dleqProof);
 
         response.setBlindSignatures(List.of(blindSignature));
@@ -425,8 +425,8 @@ class ProofRecoveryServiceTest {
 
         byte[] validSignature = new byte[64];
         when(bdkhUtils.unblindSignature(any(), any(), any())).thenReturn(validSignature);
-        when(dleqVerificationService.verifyBlindSignature(any(), any(), any())).thenReturn(true);
-        when(dleqVerificationService.verifyProof(any(), any())).thenReturn(true);
+        when(dleqVerificationService.verifyBlindSignature(any(), any(), any())).thenReturn(DLEQVerificationOutcome.VERIFIED);
+        when(dleqVerificationService.verifyProof(any(), any())).thenReturn(DLEQVerificationOutcome.VERIFIED);
         when(dleqVerificationService.addDLEQToProof(any(), any(), any()))
             .thenAnswer(invocation -> {
                 Proof<DeterministicSecret> proof = invocation.getArgument(0);

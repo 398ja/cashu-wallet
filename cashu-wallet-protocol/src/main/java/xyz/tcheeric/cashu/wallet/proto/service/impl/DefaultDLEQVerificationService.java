@@ -12,7 +12,9 @@ import xyz.tcheeric.cashu.common.Secret;
 import xyz.tcheeric.cashu.common.Signature;
 import xyz.tcheeric.cashu.crypto.DLEQUtils;
 import xyz.tcheeric.cashu.crypto.util.Utils;
+import xyz.tcheeric.cashu.wallet.proto.service.DLEQPolicy;
 import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationException;
+import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationOutcome;
 import xyz.tcheeric.cashu.wallet.proto.service.DLEQVerificationService;
 
 import java.util.Objects;
@@ -25,8 +27,29 @@ public final class DefaultDLEQVerificationService implements DLEQVerificationSer
 
     private static final ECNamedCurveParameterSpec CURVE = ECNamedCurveTable.getParameterSpec("secp256k1");
 
+    private final DLEQPolicy policy;
+
+    /** Creates a service that tolerates missing proofs, for mints that do not advertise NUT-12. */
+    public DefaultDLEQVerificationService() {
+        this(DLEQPolicy.OPTIONAL);
+    }
+
+    /**
+     * Creates a service applying the supplied missing-proof policy.
+     *
+     * @param policy the policy to apply when a subject carries no DLEQ proof
+     */
+    public DefaultDLEQVerificationService(DLEQPolicy policy) {
+        this.policy = Objects.requireNonNull(policy, "DLEQ policy cannot be null");
+    }
+
     @Override
-    public boolean verifyBlindSignature(
+    public DLEQPolicy getPolicy() {
+        return policy;
+    }
+
+    @Override
+    public DLEQVerificationOutcome verifyBlindSignature(
             BlindSignature blindSignature,
             PublicKey blindedMessage,
             PublicKey mintPublicKey
@@ -34,9 +57,7 @@ public final class DefaultDLEQVerificationService implements DLEQVerificationSer
         Objects.requireNonNull(blindSignature, "Blind signature cannot be null");
 
         if (!blindSignature.hasDLEQProof()) {
-            log.debug("dleq_verification blind_signature_skipped reason=missing_proof keyset={} amount={}",
-                blindSignature.getKeySetId(), blindSignature.getAmount());
-            return true;
+            return reportMissingProof("blind signature", String.valueOf(blindSignature.getKeySetId()));
         }
 
         Objects.requireNonNull(blindedMessage, "Blinded message cannot be null when verifying DLEQ");
@@ -76,11 +97,11 @@ public final class DefaultDLEQVerificationService implements DLEQVerificationSer
 
         log.debug("dleq_verification blind_signature_valid keyset={} amount={}",
             blindSignature.getKeySetId(), blindSignature.getAmount());
-        return true;
+        return DLEQVerificationOutcome.VERIFIED;
     }
 
     @Override
-    public <T extends Secret> boolean verifyProof(
+    public <T extends Secret> DLEQVerificationOutcome verifyProof(
             Proof<T> proof,
             PublicKey mintPublicKey
     ) {
@@ -88,9 +109,7 @@ public final class DefaultDLEQVerificationService implements DLEQVerificationSer
         Objects.requireNonNull(mintPublicKey, "Mint public key cannot be null");
 
         if (!proof.hasDLEQProof()) {
-            log.debug("dleq_verification proof_skipped reason=missing_proof keyset={} amount={}",
-                proof.getKeySetId(), proof.getAmount());
-            return true;
+            return reportMissingProof("proof", proof.getKeySetId());
         }
 
         Objects.requireNonNull(proof.getSecret(), "Proof secret cannot be null when verifying DLEQ");
@@ -137,7 +156,24 @@ public final class DefaultDLEQVerificationService implements DLEQVerificationSer
         }
 
         log.debug("dleq_verification proof_valid keyset={} amount={}", proof.getKeySetId(), proof.getAmount());
-        return true;
+        return DLEQVerificationOutcome.VERIFIED;
+    }
+
+    /**
+     * Applies the missing-proof policy, failing when the mint advertises NUT-12.
+     */
+    private DLEQVerificationOutcome reportMissingProof(String subject, String keysetId) {
+        if (policy.requiresProof()) {
+            throw new DLEQVerificationException(
+                "Failed to verify DLEQ proof for " + subject + " keyset=" + keysetId +
+                    ". The mint advertises NUT-12 but returned no DLEQ proof. " +
+                    "Suggestion: treat the mint response as untrusted and report the mint operator."
+            );
+        }
+
+        log.warn("dleq_verification {}_unproven reason=missing_proof keyset={} policy={}",
+            subject.replace(' ', '_'), keysetId, policy);
+        return DLEQVerificationOutcome.NO_PROOF_PRESENT;
     }
 
     @Override

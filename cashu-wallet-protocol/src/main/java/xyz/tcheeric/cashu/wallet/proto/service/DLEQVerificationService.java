@@ -14,8 +14,21 @@ import xyz.tcheeric.cashu.common.Secret;
  *   <li>Alice verifies blind signatures returned by the mint</li>
  *   <li>Carol verifies proofs received from another wallet</li>
  * </ul>
+ *
+ * <p>The returned {@link DLEQVerificationOutcome} distinguishes a cryptographically
+ * verified subject from one that carried no proof at all. Under
+ * {@link DLEQPolicy#REQUIRED} a missing proof is a failure, not a silent pass.
+ *
+ * @see <a href="https://github.com/cashubtc/nuts/blob/main/12.md">NUT-12: DLEQ proofs</a>
  */
 public interface DLEQVerificationService {
+
+    /**
+     * Returns the policy applied when a subject carries no DLEQ proof.
+     *
+     * @return the configured missing-proof policy
+     */
+    DLEQPolicy getPolicy();
 
     /**
      * Verifies the optional DLEQ proof attached to a blind signature (Alice path).
@@ -23,10 +36,11 @@ public interface DLEQVerificationService {
      * @param blindSignature the blind signature that may contain a DLEQ proof
      * @param blindedMessage the blinded message that was signed (B')
      * @param mintPublicKey the mint's public key for the matching amount (A)
-     * @return true when either no DLEQ proof is present or verification succeeds
-     * @throws DLEQVerificationException when a DLEQ proof exists but verification fails
+     * @return {@link DLEQVerificationOutcome#VERIFIED} or {@link DLEQVerificationOutcome#NO_PROOF_PRESENT}
+     * @throws DLEQVerificationException when verification fails, or when a proof is
+     *         absent while the policy requires one
      */
-    boolean verifyBlindSignature(
+    DLEQVerificationOutcome verifyBlindSignature(
             BlindSignature blindSignature,
             PublicKey blindedMessage,
             PublicKey mintPublicKey
@@ -37,10 +51,11 @@ public interface DLEQVerificationService {
      *
      * @param proof the proof that may contain a DLEQ proof (including blinding factor r)
      * @param mintPublicKey the mint's public key for the matching amount (A)
-     * @return true when either no DLEQ proof is present or verification succeeds
-     * @throws DLEQVerificationException when a DLEQ proof exists but verification fails
+     * @return {@link DLEQVerificationOutcome#VERIFIED} or {@link DLEQVerificationOutcome#NO_PROOF_PRESENT}
+     * @throws DLEQVerificationException when verification fails, or when a proof is
+     *         absent while the policy requires one
      */
-    <T extends Secret> boolean verifyProof(
+    <T extends Secret> DLEQVerificationOutcome verifyProof(
             Proof<T> proof,
             PublicKey mintPublicKey
     );

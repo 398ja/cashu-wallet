@@ -159,11 +159,9 @@ public final class ProofRecoveryServiceImpl implements ProofRecoveryService {
                 // Convert blinding factor to BigInteger
                 BigInteger r = Utils.bigIntFromBytes(blindingFactor);
 
-                if (blindSig.hasDLEQProof()) {
-                    byte[] blindedBytes = BDHKEUtils.blindMessage(secret.getData(), blindingFactor);
-                    PublicKey blindedMessage = PublicKey.fromBytes(blindedBytes);
-                    dleqVerificationService.verifyBlindSignature(blindSig, blindedMessage, publicKey);
-                }
+                byte[] blindedBytes = BDHKEUtils.blindMessage(secret.getData(), blindingFactor);
+                PublicKey blindedMessage = PublicKey.fromBytes(blindedBytes);
+                dleqVerificationService.verifyBlindSignature(blindSig, blindedMessage, publicKey);
 
                 // Unblind the signature using UnblindSignatureTask
                 UnblindSignatureTask<DeterministicSecret> unblindTask =

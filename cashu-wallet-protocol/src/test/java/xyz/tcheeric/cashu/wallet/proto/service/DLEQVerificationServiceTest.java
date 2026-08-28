@@ -52,7 +52,7 @@ class DLEQVerificationServiceTest {
                 fixture.blindSignature(),
                 fixture.blindedMessage(),
                 fixture.mintPublicKey()
-            )).isTrue();
+            )).isEqualTo(DLEQVerificationOutcome.VERIFIED);
         }
 
         /**
@@ -81,23 +81,45 @@ class DLEQVerificationServiceTest {
         }
 
         /**
-         * Ensures blind signatures without DLEQ data bypass verification.
+         * Ensures a blind signature without DLEQ data reports the absence explicitly rather
+         * than being reported as verified, when the mint does not advertise NUT-12.
          */
         @Test
-        void shouldSkipBlindSignatureWhenProofMissing() {
+        void shouldReportMissingProofWhenPolicyOptional() {
             DleqFixture fixture = createFixture();
 
-            BlindSignature withoutProof = BlindSignature.builder()
+            assertThat(service.verifyBlindSignature(
+                withoutDleq(fixture),
+                fixture.blindedMessage(),
+                fixture.mintPublicKey()
+            )).isEqualTo(DLEQVerificationOutcome.NO_PROOF_PRESENT);
+        }
+
+        /**
+         * Ensures a mint that advertises NUT-12 but omits the proof is a verification failure,
+         * not a silent pass (finding W2).
+         */
+        @Test
+        void shouldRejectMissingProofWhenPolicyRequired() {
+            DleqFixture fixture = createFixture();
+            DLEQVerificationService strictService =
+                new DefaultDLEQVerificationService(DLEQPolicy.REQUIRED);
+
+            assertThatThrownBy(() -> strictService.verifyBlindSignature(
+                withoutDleq(fixture),
+                fixture.blindedMessage(),
+                fixture.mintPublicKey()
+            ))
+                .isInstanceOf(DLEQVerificationException.class)
+                .hasMessageContaining("advertises NUT-12");
+        }
+
+        private BlindSignature withoutDleq(DleqFixture fixture) {
+            return BlindSignature.builder()
                 .amount(fixture.blindSignature().getAmount())
                 .keySetId(fixture.blindSignature().getKeySetId())
                 .blindedSignature(fixture.blindSignature().getBlindedSignature())
                 .build();
-
-            assertThat(service.verifyBlindSignature(
-                withoutProof,
-                fixture.blindedMessage(),
-                fixture.mintPublicKey()
-            )).isTrue();
         }
     }
 
@@ -113,7 +135,26 @@ class DLEQVerificationServiceTest {
             DleqFixture fixture = createFixture();
 
             assertThat(service.verifyProof(fixture.proof(), fixture.mintPublicKey()))
-                .isTrue();
+                .isEqualTo(DLEQVerificationOutcome.VERIFIED);
+        }
+
+        /**
+         * Ensures a received proof carrying no DLEQ data is reported as unproven rather than
+         * verified, so a caller can warn the user (finding W2).
+         */
+        @Test
+        void shouldReportMissingProofWhenReceivedProofHasNoDleq() {
+            DleqFixture fixture = createFixture();
+
+            Proof<DeterministicSecret> withoutDleq = Proof.<DeterministicSecret>builder()
+                .amount(fixture.proof().getAmount())
+                .secret(fixture.proof().getSecret())
+                .keySetId(fixture.proof().getKeySetId())
+                .unblindedSignature(fixture.proof().getUnblindedSignature())
+                .build();
+
+            assertThat(service.verifyProof(withoutDleq, fixture.mintPublicKey()))
+                .isEqualTo(DLEQVerificationOutcome.NO_PROOF_PRESENT);
         }
 
         /**
