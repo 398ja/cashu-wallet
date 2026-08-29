@@ -14,22 +14,36 @@ All notable changes to this project will be documented in this file.
 - **W2 (NUT-12)**: `DLEQPolicy` derives from NUT-06 mint information, making a missing DLEQ
   proof a failure when the mint advertises NUT-12 support.
 - Documentation: [NUT-08 Lightning Fee Return](docs/reference/nut-08.md).
-- Audit of the cashu-lib 0.22.0 NUT-00 secret encoding changes, with a reproduction script
+- Audit of the cashu-lib NUT-00 secret encoding changes, with a reproduction script
   (`scripts/probe-secret-encoding.sh`) and findings in
   [cashu-lib 0.22.0 secret encoding audit](docs/explanation/cashu-lib-0.22.0-secret-encoding-audit.md).
-  The upgrade is **blocked**: `DeterministicSecret.getData()` and `toString()` disagree under
-  0.22.0, so a wallet-issued proof commits to a different `Y` than the wallet reports to the
-  mint, breaking `/checkstate` and NUT-13 restore. `cashu-lib.version` stays at 0.21.0.
+  The audit blocked the 0.22.0 upgrade; it is now resolved in cashu-lib 0.23.0.
+- `SpecOnlySecretEncodingTest` verifies a wallet-issued proof under `SecretEncoding.SPEC` alone,
+  bypassing the legacy fallback. This is the interoperability check whose absence let the
+  encoding defect stay green: every other test mints and verifies with the same bytes on both
+  sides, so none of them asks what a third party computes.
+- `MintErrorReader` parses the NUT-00 `{detail, code}` error body a mint returns on a failed
+  request, so a caller can distinguish `quote_not_paid` from `quote_expired` rather than seeing
+  only an HTTP status. Previously the wallet discarded mint error bodies entirely.
 
 ### Changed
+
+- Updated cashu-lib to 0.23.0. `DeterministicSecret.getData()` now returns the UTF-8 bytes of the
+  hex string the secret is transmitted as, so the `Y` a proof commits to matches the `Y` the wallet
+  reports to the mint **and** a spec-conforming mint accepts the proof. The latter held under
+  neither 0.21.0 nor 0.22.0. Assertions that want the raw derivation output now call
+  `getDerivedBytes()`; the four issuance sites are unchanged and correct by construction.
+- `DefaultDLEQVerificationService` passes the secret as a `String`, selecting the overload that
+  walks `SecretEncoding.verificationOrder()`, so a proof issued under the legacy encoding still
+  verifies instead of being rejected.
+- `DeriveSecretsTask` rejects a keyset id whose version NUT-13 derivation is undefined for with
+  `UnsupportedKeysetVersionException`, rather than applying version 1 rules to a version 2 keyset
+  and recovering nothing in a way indistinguishable from an empty wallet.
 
 - **W2 (NUT-12)**: `DLEQVerificationService` returns `DLEQVerificationOutcome` instead of
   `boolean`, so callers can distinguish `VERIFIED` from `NO_PROOF_PRESENT` rather than
   treating an absent proof as a successful verification. **BREAKING** for direct callers of
   `verifyBlindSignature` and `verifyProof`.
-
-- Updated cashu-lib to 0.21.0 (NUT-11 P2PK secret validation). Validation is fail-closed:
-  a malformed P2PK lock is now rejected at parse time rather than accepted and misbehaving later.
 
 ---
 

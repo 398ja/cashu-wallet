@@ -134,7 +134,7 @@ public final class DefaultDLEQVerificationService implements DLEQVerificationSer
                 dleq.getE(),
                 dleq.getS(),
                 dleq.getR(),
-                proof.getSecret().toBytes(),
+                proof.getSecret().toString(),
                 unblindedSignaturePoint,
                 mintPublicKeyPoint
             );

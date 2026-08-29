@@ -68,9 +68,9 @@ class WalletRecoveryIntegrationTest {
 
         // Verify secrets are identical
         for (int i = 0; i < 10; i++) {
-            assertThat(result1.getSecrets().get(i).getData())
+            assertThat(result1.getSecrets().get(i).getDerivedBytes())
                 .as("Secret at index %d should be identical", i)
-                .isEqualTo(result2.getSecrets().get(i).getData());
+                .isEqualTo(result2.getSecrets().get(i).getDerivedBytes());
 
             assertThat(result1.getBlindingFactors().get(i))
                 .as("Blinding factor at index %d should be identical", i)
@@ -99,7 +99,7 @@ class WalletRecoveryIntegrationTest {
             assertThat(secret.getKeysetId()).isEqualTo(keysetId);
             assertThat(secret.getCounter()).isEqualTo(startCounter + i);
             assertThat(secret.getDerivationPath()).isNotNull();
-            assertThat(secret.getData()).hasSize(32);
+            assertThat(secret.getDerivedBytes()).hasSize(32);
         }
     }
 
@@ -117,9 +117,9 @@ class WalletRecoveryIntegrationTest {
         var result2 = task2.execute();
 
         // Assert
-        assertThat(result1.getSecrets().get(0).getData())
+        assertThat(result1.getSecrets().get(0).getDerivedBytes())
             .as("Different counters should produce different secrets")
-            .isNotEqualTo(result2.getSecrets().get(0).getData());
+            .isNotEqualTo(result2.getSecrets().get(0).getDerivedBytes());
 
         assertThat(result1.getBlindingFactors().get(0))
             .as("Different counters should produce different blinding factors")
@@ -141,9 +141,9 @@ class WalletRecoveryIntegrationTest {
         var result2 = task2.execute();
 
         // Assert
-        assertThat(result1.getSecrets().get(0).getData())
+        assertThat(result1.getSecrets().get(0).getDerivedBytes())
             .as("Different keysets should produce different secrets")
-            .isNotEqualTo(result2.getSecrets().get(0).getData());
+            .isNotEqualTo(result2.getSecrets().get(0).getDerivedBytes());
     }
 
     /**
@@ -165,7 +165,7 @@ class WalletRecoveryIntegrationTest {
 
         // Verify all secrets are 32 bytes
         result.getSecrets().forEach(secret ->
-            assertThat(secret.getData()).hasSize(32)
+            assertThat(secret.getDerivedBytes()).hasSize(32)
         );
 
         // Verify all blinding factors are 32 bytes
@@ -355,7 +355,7 @@ class WalletRecoveryIntegrationTest {
 
         // Verify all secrets are properly formed
         result.getSecrets().forEach(secret -> {
-            assertThat(secret.getData()).hasSize(32);
+            assertThat(secret.getDerivedBytes()).hasSize(32);
             assertThat(secret.hasMetadata()).isTrue();
         });
     }
@@ -455,9 +455,9 @@ class WalletRecoveryIntegrationTest {
 
         // Assert - verify all secrets are different between keysets
         for (int i = 0; i < 5; i++) {
-            byte[] secret1 = result1.getSecrets().get(i).getData();
-            byte[] secret2 = result2.getSecrets().get(i).getData();
-            byte[] secret3 = result3.getSecrets().get(i).getData();
+            byte[] secret1 = result1.getSecrets().get(i).getDerivedBytes();
+            byte[] secret2 = result2.getSecrets().get(i).getDerivedBytes();
+            byte[] secret3 = result3.getSecrets().get(i).getDerivedBytes();
 
             assertThat(secret1)
                 .as("Keyset 1 and 2 should produce different secrets at index %d", i)
@@ -493,7 +493,7 @@ class WalletRecoveryIntegrationTest {
         var taskResult = task.execute();
 
         // Assert
-        assertThat(taskResult.getSecrets().get(0).getData())
+        assertThat(taskResult.getSecrets().get(0).getDerivedBytes())
             .as("Task-derived secret should match direct derivation")
             .isEqualTo(directPair.secret());
 
@@ -531,9 +531,9 @@ class WalletRecoveryIntegrationTest {
         assertThat(result3.getSecrets().get(99).getCounter()).isEqualTo(299);
 
         // Verify no overlapping secrets
-        assertThat(result1.getSecrets().get(99).getData())
-            .isNotEqualTo(result2.getSecrets().get(0).getData());
-        assertThat(result2.getSecrets().get(99).getData())
-            .isNotEqualTo(result3.getSecrets().get(0).getData());
+        assertThat(result1.getSecrets().get(99).getDerivedBytes())
+            .isNotEqualTo(result2.getSecrets().get(0).getDerivedBytes());
+        assertThat(result2.getSecrets().get(99).getDerivedBytes())
+            .isNotEqualTo(result3.getSecrets().get(0).getDerivedBytes());
     }
 }

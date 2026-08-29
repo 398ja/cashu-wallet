@@ -3,8 +3,14 @@
 Audit of `cashu-wallet` against the two NUT-00 secret encoding changes in cashu-lib 0.22.0,
 requested by [#39](https://github.com/398ja/cashu-wallet/issues/39).
 
-**Verdict: the bump is NOT safe to land. It is a silent, compile-clean, test-clean fund-loss
-regression.** `cashu-lib.version` is deliberately left at `0.21.0`.
+**Original verdict: the bump was NOT safe to land. It was a silent, compile-clean, test-clean
+fund-loss regression.**
+
+**Resolved in cashu-lib 0.23.0** ([`6e23f51`](https://github.com/398ja/cashu-lib/commit/6e23f51)).
+`DeterministicSecret.getData()` now returns the UTF-8 bytes of the hex string the secret is
+transmitted as, and `getDerivedBytes()` exposes the raw derivation output. `cashu-lib.version` is
+now `0.23.0`. See [Resolution](#resolution) for the measured outcome and what changed in this
+repository. The analysis below is retained as the record of the defect.
 
 ## The two changes, and why they interact badly here
 
@@ -115,7 +121,61 @@ No action required. `Error` and `ErrorDeserializer` had no consumers, and a grep
 `CashuErrorException` and `getResponseBodyAsString` across both modules returns nothing. The wallet
 reads no mint error body at all, which is its own gap (#39 item 1) but not a breakage.
 
-## Recommendation
+## Resolution
+
+All four follow-ups below were completed and the bump landed at `0.23.0`.
+
+### What the probe now measures
+
+`./scripts/probe-secret-encoding.sh` was extended to a third version and to a second question. The
+first question is the one the audit asked: does the wallet's `Y` equal the `Y` it reports to the
+mint? The second is the one it should also have asked: would a SPEC-only mint accept the proof?
+
+```
+=== cashu-lib 0.21.0 ===
+checkstate MATCH?           = true
+spec-only mint accepts?     = false
+
+=== cashu-lib 0.23.0 ===
+Y the proof commits to      = 0266dff1...506c
+Y the wallet sends to mint  = 0266dff1...506c
+checkstate MATCH?           = true
+spec-only mint accepts?     = true
+```
+
+The 0.22.0 row is omitted deliberately. The locally installed 0.22.0 artifact has since been
+overwritten by a build carrying the fix (it exposes `getDerivedBytes`), so re-running the probe
+against it now reports the fixed behaviour rather than the released one. The 0.22.0 figures
+recorded earlier in this document stand as the original measurement; they are not reproducible
+from the current local repository and are not re-asserted here.
+
+The 0.21.0 column is the more uncomfortable finding. Internal consistency held, which is why the
+suite was green, but a spec-conforming mint rejected the proof. **The wallet was never
+spec-conforming here**; 0.22.0 traded one half of the property for the other, and only 0.23.0 holds
+both at once. Restoring 0.21.0 would not have been a safe resting state either.
+
+### Changes in this repository
+
+- `cashu-lib.version` 0.21.0 → 0.23.0.
+- The four issuance sites are unchanged. They blind with `secret.getData()`, which is now the
+  correct encoding by construction, so the fix reaches all of them at once as intended.
+- Callers that genuinely wanted the derivation output, all of them assertions in
+  `DeriveSecretsTaskTest` and `WalletRecoveryIntegrationTest`, moved to `getDerivedBytes()`. These
+  are the call sites the silent semantic change would otherwise have mislead: they still compiled
+  and simply started comparing different bytes.
+- `DefaultDLEQVerificationService` now passes `proof.getSecret().toString()`, selecting the `String`
+  overload of `DLEQUtils.verifyProofWithBlindingFactor`, so verification walks
+  `SecretEncoding.verificationOrder()` and a proof issued under the legacy encoding still verifies.
+- `SpecOnlySecretEncodingTest` is the interoperability test this audit said no existing test could
+  stand in for. It verifies under `SecretEncoding.SPEC` alone, deliberately bypassing the legacy
+  fallback, so a future encoding drift fails the build instead of passing quietly.
+- `DeriveSecretsTask` rejects a non-version-1 keyset id in its constructor with
+  `UnsupportedKeysetVersionException`. It derives through bip-utils directly, bypassing cashu-lib's
+  own guard, so without this a version 2 keyset would silently derive secrets the mint never signed.
+- `MintErrorReader` reads the NUT-00 `{detail, code}` body on a failed request, closing #39 item 1.
+  A caller can now distinguish `quote_not_paid` from `quote_expired` instead of seeing only a status.
+
+### Superseded recommendation
 
 The fix belongs in cashu-lib, not here. Aligning `DeterministicSecret.getData()` with
 `toString()` the way `RandomStringSecret` was aligned would fix all four wallet call sites at once

@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
-# Reproduces the cashu-lib 0.22.0 secret encoding regression documented in
-# docs/explanation/cashu-lib-0.22.0-secret-encoding-audit.md (issue #39).
+# Tracks the cashu-lib secret encoding story documented in
+# docs/explanation/cashu-lib-0.22.0-secret-encoding-audit.md (issues #39 and #40).
 #
-# The wallet blinds a proof with DeterministicSecret.getData() (32 raw derived bytes) while the
-# mint verifies against the wire string DeterministicSecret.toString() (64 hex characters). Under
-# cashu-lib 0.21.0 those agree; under 0.22.0 they map to different curve points Y.
+# The wallet blinds a proof with DeterministicSecret.getData() while the mint verifies against the
+# wire string DeterministicSecret.toString(). Two independent properties are probed:
 #
-# Run with no arguments to compare both library versions:
+#   checkstate MATCH?       the Y the proof commits to equals the Y the wallet reports to the mint
+#   spec-only mint accepts? a SPEC-only (UTF-8 hashing) mint such as Nutshell accepts the proof
+#
+# Run with no arguments to compare all three library versions:
 #     ./scripts/probe-secret-encoding.sh
 #
-# Expect "checkstate MATCH? true" under 0.21.0 and "false" under 0.22.0.
+# Expected results:
+#   0.21.0  MATCH true,  spec-only false  (self-consistent, but never spec-conforming)
+#   0.22.0  MATCH false, spec-only true   (the fund-loss regression of #40)
+#   0.23.0  MATCH true,  spec-only true   (getData() returns the UTF-8 wire bytes; both hold)
+#
+# Note: a locally installed 0.22.0 artifact may have been overwritten by a later build carrying
+# the fix, in which case the 0.22.0 row reports the fixed behaviour rather than the released one.
+# Check for DeterministicSecret.getDerivedBytes in the jar before trusting that row.
 
 set -euo pipefail
 
@@ -98,3 +107,4 @@ probe_version() {
 
 probe_version "0.21.0"
 probe_version "0.22.0"
+probe_version "0.23.0"

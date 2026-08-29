@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.UnsupportedKeysetVersionException;
 import xyz.tcheeric.cashu.common.KeysetId;
 
 import java.util.Arrays;
@@ -94,8 +95,8 @@ class DeriveSecretsTaskTest {
         // Assert
         assertThat(result1.getSecrets()).hasSameSizeAs(result2.getSecrets());
         for (int i = 0; i < result1.getSecrets().size(); i++) {
-            assertThat(result1.getSecrets().get(i).getData())
-                .containsExactly(result2.getSecrets().get(i).getData());
+            assertThat(result1.getSecrets().get(i).getDerivedBytes())
+                .containsExactly(result2.getSecrets().get(i).getDerivedBytes());
             assertThat(result1.getBlindingFactors().get(i))
                 .containsExactly(result2.getBlindingFactors().get(i));
         }
@@ -116,8 +117,8 @@ class DeriveSecretsTaskTest {
 
         // Assert
         assertThat(Arrays.equals(
-            result1.getSecrets().get(0).getData(),
-            result2.getSecrets().get(0).getData()
+            result1.getSecrets().get(0).getDerivedBytes(),
+            result2.getSecrets().get(0).getDerivedBytes()
         )).isFalse();
     }
 
@@ -172,7 +173,7 @@ class DeriveSecretsTaskTest {
 
         // Assert
         for (int i = 0; i < result.getSecrets().size(); i++) {
-            byte[] secret = result.getSecrets().get(i).getData();
+            byte[] secret = result.getSecrets().get(i).getDerivedBytes();
             assertThat(secret)
                 .describedAs("Secret at index %s should be 32 bytes", i)
                 .isNotNull()
@@ -248,8 +249,8 @@ class DeriveSecretsTaskTest {
 
         // Assert
         assertThat(Arrays.equals(
-            result1.getSecrets().get(0).getData(),
-            result2.getSecrets().get(0).getData()
+            result1.getSecrets().get(0).getDerivedBytes(),
+            result2.getSecrets().get(0).getDerivedBytes()
         )).isFalse();
     }
 
@@ -270,9 +271,27 @@ class DeriveSecretsTaskTest {
 
         // Assert
         assertThat(Arrays.equals(
-            result1.getSecrets().get(0).getData(),
-            result2.getSecrets().get(0).getData()
+            result1.getSecrets().get(0).getDerivedBytes(),
+            result2.getSecrets().get(0).getDerivedBytes()
         )).isFalse();
+    }
+
+    /**
+     * Ensures a version 2 keyset is rejected rather than derived with version 1 rules.
+     *
+     * <p>NUT-13 derivation is only defined for version 1 keyset ids. Applying it to a version 2
+     * keyset yields secrets the mint never signed, so restore returns nothing and looks exactly
+     * like an empty wallet. The failure must be loud and must name the version.
+     */
+    @Test
+    void shouldRejectKeysetWhenIdVersionIsNotDerivable() {
+        // Arrange
+        KeysetId versionTwoKeysetId = KeysetId.fromString(
+            "01" + "9a1f293253e41e9a1f293253e41e9a1f293253e41e9a1f293253e41e9a1f2932");
+
+        // Act & Assert
+        assertThatThrownBy(() -> new DeriveSecretsTask(masterKey, versionTwoKeysetId, 0, 1))
+            .isInstanceOf(UnsupportedKeysetVersionException.class);
     }
 
     // ========================================
