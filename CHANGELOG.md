@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **W1 (NUT-02)**: The wallet now reads `input_fee_ppk` and the keyset `active` flag. A
+  `KeysetCache` holds the mint's keyset listing (refreshed from `GET /v1/keysets` by
+  `KeysetDirectory`), `WalletFeeCalculator` prices inputs against the keyset that issued each
+  one, `SwapPlanner` subtracts the fee from the outputs so the mint's
+  `sum(inputs) - fees == sum(outputs)` holds, outputs are built only against an active keyset,
+  and `InactiveFirstProofSelector` spends inactive-keyset proofs first so a rotated keyset
+  drains rather than stranding its balance. Previously every swap against a fee-charging mint
+  would have been rejected as unbalanced. Refs #36.
+- Documentation: [NUT-02 Keysets and Fees](docs/reference/nut-02.md).
 - **W3 (NUT-08)**: Melt now sends `max(ceil(log2(fee_reserve)), 1)` blank outputs and unblinds
   the change the mint returns, recovering the routing fee the mint did not spend. Previously
   the whole fee reserve was forfeited on every melt. New `BlankOutputBuilder`,
