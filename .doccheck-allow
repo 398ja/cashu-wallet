@@ -1,0 +1,4 @@
+# Names in docs that are not Java types. Checked by `doccheck`.
+
+# Named in the cashu-lib 0.22.0 audit as an upstream type under discussion
+ErrorDeserializer
