@@ -28,7 +28,18 @@ Describes how cashu-wallet implements NUT-12 DLEQ verification on the wallet sid
   - Interprets mint states, retaining proofs marked `unspent` (or `0`).
   - Missing states are logged and kept; explicit spent states are dropped.
 
+## Missing proofs are not verified proofs
+- `verifyBlindSignature` and `verifyProof` return a `DLEQVerificationOutcome`, not a boolean,
+  so callers can tell `VERIFIED` apart from `NO_PROOF_PRESENT` and warn the user about an
+  unproven token instead of treating it as checked.
+- `DLEQPolicy.forMint(mintInformation)` reads NUT-06 mint information. A mint that advertises
+  `"12": {"supported": true}` must attach DLEQ data; under `DLEQPolicy.REQUIRED` a missing
+  proof raises `DLEQVerificationException` rather than passing silently.
+- Under `DLEQPolicy.OPTIONAL`, the default for mints that do not advertise NUT-12, a missing
+  proof is logged at `WARN` and reported as `NO_PROOF_PRESENT`.
+
 ## Notes and limitations
-- DLEQ is optional per spec; absence of a proof skips verification but does not fail the flow.
+- DLEQ is optional per spec; absence of a proof under `OPTIONAL` policy does not fail the flow,
+  but it is reported distinctly and never counted as a successful verification.
 - Public keys are amount-scoped; callers must supply the correct keyset key for the proof amount.
 - `/checkstate` relies on mint availability; failures surface as `IllegalStateException` to let callers decide retry/backoff.

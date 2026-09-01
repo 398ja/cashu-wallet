@@ -10,11 +10,14 @@ This folder organises project documentation according to the Diátaxis framework
 - [Build and test the project](how-to/run-and-test.md)
 
 ## Reference
+- [NUT-02 Keysets and Fees](reference/nut-02.md)
+- [NUT-08 Lightning Fee Return](reference/nut-08.md)
 - [NUT-12 Wallet Support](reference/nut-12.md)
 
 ## Explanation
 - [Architecture](explanation/architecture.md)
 - [Virtual Thread Compatibility](explanation/virtual-thread-compatibility.md)
+- [cashu-lib 0.22.0 secret encoding audit](explanation/cashu-lib-0.22.0-secret-encoding-audit.md)
 
 ## Developer
 - [Secure Coding Guidelines](developer/SECURE_CODING.md)

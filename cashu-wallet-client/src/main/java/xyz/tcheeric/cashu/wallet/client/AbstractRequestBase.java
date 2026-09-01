@@ -113,8 +113,7 @@ public abstract class AbstractRequestBase<T, U> {
             return response.getBody();
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("request_base request_failed method={} target={} request_id={} result=error duration_ms={} error={}",
-                    HTTP_METHOD_GET, url, requestId, duration, e.getMessage());
+            logFailure(HTTP_METHOD_GET, url, requestId, duration, e);
             throw e;
         }
     }
@@ -137,9 +136,24 @@ public abstract class AbstractRequestBase<T, U> {
             return response.getBody();
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("request_base request_failed method={} target={} request_id={} result=error duration_ms={} error={}",
-                    HTTP_METHOD_POST, url, requestId, duration, e.getMessage());
+            logFailure(HTTP_METHOD_POST, url, requestId, duration, e);
             throw e;
         }
+    }
+
+    /**
+     * Logs a failed request, including the mint's NUT-00 error body when it returned one.
+     *
+     * <p>Without the body the log carries only an HTTP status, which cannot distinguish a quote
+     * that is merely unpaid from one that has expired.
+     */
+    private void logFailure(String method, String url, String requestId, long duration, Exception failure) {
+        String mintError = MintErrorReader.read(failure)
+                .map(MintErrorReader::describe)
+                .orElse("none");
+
+        log.error("request_base request_failed method={} target={} request_id={} result=error "
+                        + "duration_ms={} error={} mint_error={}",
+                method, url, requestId, duration, failure.getMessage(), mintError);
     }
 }

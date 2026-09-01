@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.crypto.DeterministicKey;
 import xyz.tcheeric.bips.bip32.nut.Nut13Derivation;
 import xyz.tcheeric.cashu.common.nut13.DeterministicSecret;
+import xyz.tcheeric.cashu.common.nut13.UnsupportedKeysetVersionException;
 import xyz.tcheeric.cashu.common.KeysetId;
+import xyz.tcheeric.cashu.common.KeysetIdVersion;
 import xyz.tcheeric.cashu.common.util.Task;
 import xyz.tcheeric.cashu.entities.annotation.Nut;
 
@@ -33,6 +35,9 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
 
     /** Maximum number of secrets to derive in a single batch. */
     private static final int MAX_COUNT = 1_000;
+
+    /** The only NUT-02 keyset id version for which NUT-13 derivation is defined. */
+    private static final KeysetIdVersion DERIVABLE_KEYSET_ID_VERSION = KeysetIdVersion.V1;
 
     private final DeterministicKey masterKey;
     private final KeysetId keysetId;
@@ -62,9 +67,26 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
                 String.format("Counter range overflows: startCounter=%d, count=%d", startCounter, count), e);
         }
         this.masterKey = masterKey;
-        this.keysetId = keysetId;
+        this.keysetId = requireDerivableKeysetVersion(keysetId);
         this.startCounter = startCounter;
         this.count = count;
+    }
+
+    /**
+     * Rejects a keyset whose id version this wallet cannot derive NUT-13 secrets for.
+     *
+     * <p>Only version 1 ids are derivable. Applying version 1 derivation to a version 2 keyset
+     * produces secrets the mint never signed, so restore recovers nothing and the result is
+     * indistinguishable from an empty wallet. Failing loudly is the point.
+     */
+    private static KeysetId requireDerivableKeysetVersion(KeysetId keysetId) {
+        KeysetIdVersion version = keysetId.getVersion();
+        if (version != DERIVABLE_KEYSET_ID_VERSION) {
+            log.warn("derive_secrets keyset_not_restorable keyset={} version={} impact=rejected",
+                keysetId, version);
+            throw new UnsupportedKeysetVersionException(keysetId, version);
+        }
+        return keysetId;
     }
 
     @Override
@@ -98,6 +120,8 @@ public class DeriveSecretsTask implements Task<DeriveSecretsTask.DeriveSecretsRe
                 secrets.add(secret);
                 blindingFactors.add(pair.blindingFactor());
 
+            } catch (UnsupportedKeysetVersionException e) {
+                throw e;
             } catch (Exception e) {
                 log.error("derive_secrets task_failed keyset={} counter={} impact=abort_batch",
                     keysetId, counter, e);

@@ -2,7 +2,63 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-08-29
+
+### Changed
+
+- Upgraded to cashu-lib 0.27.0.
+
 ## [Unreleased]
+
+### Added
+
+- **W1 (NUT-02)**: The wallet now reads `input_fee_ppk` and the keyset `active` flag. A
+  `KeysetCache` holds the mint's keyset listing (refreshed from `GET /v1/keysets` by
+  `KeysetDirectory`), `WalletFeeCalculator` prices inputs against the keyset that issued each
+  one, `SwapPlanner` subtracts the fee from the outputs so the mint's
+  `sum(inputs) - fees == sum(outputs)` holds, outputs are built only against an active keyset,
+  and `InactiveFirstProofSelector` spends inactive-keyset proofs first so a rotated keyset
+  drains rather than stranding its balance. Previously every swap against a fee-charging mint
+  would have been rejected as unbalanced. Refs #36.
+- Documentation: [NUT-02 Keysets and Fees](docs/reference/nut-02.md).
+- **W3 (NUT-08)**: Melt now sends `max(ceil(log2(fee_reserve)), 1)` blank outputs and unblinds
+  the change the mint returns, recovering the routing fee the mint did not spend. Previously
+  the whole fee reserve was forfeited on every melt. New `BlankOutputBuilder`,
+  `MeltChangeService`, `WalletMeltService`, and `MeltResult`; blank output secrets are derived
+  deterministically (NUT-13) so the change is recoverable from the mnemonic.
+- **W2 (NUT-12)**: `DLEQPolicy` derives from NUT-06 mint information, making a missing DLEQ
+  proof a failure when the mint advertises NUT-12 support.
+- Documentation: [NUT-08 Lightning Fee Return](docs/reference/nut-08.md).
+- Audit of the cashu-lib NUT-00 secret encoding changes, with a reproduction script
+  (`scripts/probe-secret-encoding.sh`) and findings in
+  [cashu-lib 0.22.0 secret encoding audit](docs/explanation/cashu-lib-0.22.0-secret-encoding-audit.md).
+  The audit blocked the 0.22.0 upgrade; it is now resolved in cashu-lib 0.23.0.
+- `SpecOnlySecretEncodingTest` verifies a wallet-issued proof under `SecretEncoding.SPEC` alone,
+  bypassing the legacy fallback. This is the interoperability check whose absence let the
+  encoding defect stay green: every other test mints and verifies with the same bytes on both
+  sides, so none of them asks what a third party computes.
+- `MintErrorReader` parses the NUT-00 `{detail, code}` error body a mint returns on a failed
+  request, so a caller can distinguish `quote_not_paid` from `quote_expired` rather than seeing
+  only an HTTP status. Previously the wallet discarded mint error bodies entirely.
+
+### Changed
+
+- Updated cashu-lib to 0.23.0. `DeterministicSecret.getData()` now returns the UTF-8 bytes of the
+  hex string the secret is transmitted as, so the `Y` a proof commits to matches the `Y` the wallet
+  reports to the mint **and** a spec-conforming mint accepts the proof. The latter held under
+  neither 0.21.0 nor 0.22.0. Assertions that want the raw derivation output now call
+  `getDerivedBytes()`; the four issuance sites are unchanged and correct by construction.
+- `DefaultDLEQVerificationService` passes the secret as a `String`, selecting the overload that
+  walks `SecretEncoding.verificationOrder()`, so a proof issued under the legacy encoding still
+  verifies instead of being rejected.
+- `DeriveSecretsTask` rejects a keyset id whose version NUT-13 derivation is undefined for with
+  `UnsupportedKeysetVersionException`, rather than applying version 1 rules to a version 2 keyset
+  and recovering nothing in a way indistinguishable from an empty wallet.
+
+- **W2 (NUT-12)**: `DLEQVerificationService` returns `DLEQVerificationOutcome` instead of
+  `boolean`, so callers can distinguish `VERIFIED` from `NO_PROOF_PRESENT` rather than
+  treating an absent proof as a successful verification. **BREAKING** for direct callers of
+  `verifyBlindSignature` and `verifyProof`.
 
 ---
 
