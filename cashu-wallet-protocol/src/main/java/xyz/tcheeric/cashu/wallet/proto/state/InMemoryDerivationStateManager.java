@@ -36,11 +36,20 @@ import java.util.stream.Collectors;
  * </ul>
  *
  * <h2>Persistence</h2>
- * <p>This implementation does NOT persist state. For production use, consider:
+ * <p><b>This implementation does NOT persist state, and losing it reuses secrets.</b> NUT-13
+ * derives each secret from (seed, keyset, counter). A restart resets every counter to zero, so
+ * the next mint derives secrets this wallet has already used: the mint sees a duplicate Y and
+ * rejects the swap, and in the worst case the wallet blinds a fresh output over a secret whose
+ * proof it still holds (audit L-18). The consequence is unspendable outputs, not a leak, but it
+ * is a data-loss bug that presents as inexplicable mint errors.
+ *
+ * <p>This class is therefore suitable for tests and for short-lived processes that hold no funds.
+ * Any wallet that survives a restart needs one of:
  * <ul>
  *   <li>Extending this class and overriding methods to add persistence</li>
  *   <li>Implementing a separate persisted version</li>
- *   <li>Periodically exporting state via {@link #exportState()} and restoring via {@link #importState(Map)}</li>
+ *   <li>Periodically exporting state via {@link #exportState()} and restoring via {@link #importState(Map)}
+ *       &mdash; noting that "periodically" bounds the reuse window rather than closing it</li>
  * </ul>
  *
  * <h2>Usage Example</h2>

@@ -200,14 +200,18 @@ public final class MnemonicManager {
         try {
             var result = Bip39.validateMnemonic(mnemonic);
 
-            log.debug("mnemonic_detailed_validation_completed valid={} error={}",
-                result.isValid(), result.getErrorMessage());
+            // The library's message is not logged (audit M-19). BIP39 validators routinely quote
+            // the offending word back ("unknown word 'abandonn' at index 3"), so the diagnostic
+            // that helps a user is exactly the one that puts part of their seed phrase in the
+            // log. Whether the phrase is valid is safe to record; why it is not, is not.
+            log.debug("mnemonic_detailed_validation_completed valid={}", result.isValid());
 
             return new ValidationResult(result.isValid(), result.getErrorMessage());
 
         } catch (Exception e) {
-            log.error("mnemonic_detailed_validation_error error={}", e.getMessage());
-            return new ValidationResult(false, "Validation error: " + e.getMessage());
+            // Type only, for the same reason: the message may quote the input.
+            log.error("mnemonic_detailed_validation_error type={}", e.getClass().getSimpleName());
+            return new ValidationResult(false, "The mnemonic phrase could not be validated");
         }
     }
 
@@ -241,11 +245,12 @@ public final class MnemonicManager {
 
         // Validate mnemonic first
         if (!validateMnemonic(mnemonic)) {
-            ValidationResult result = validateMnemonicWithDetails(mnemonic);
-            log.error("master_key_derivation_failed_invalid_mnemonic error={}",
-                result.getErrorMessage());
+            // Neither logged nor put in the exception message (audit M-19): the library's
+            // explanation of what is wrong with a mnemonic tends to quote the word that is
+            // wrong. The caller knows which phrase they passed; they do not need it echoed.
+            log.error("master_key_derivation_failed_invalid_mnemonic");
             throw new IllegalArgumentException(
-                "Invalid mnemonic phrase: " + result.getErrorMessage()
+                "Invalid mnemonic phrase. Call validateMnemonicWithDetails for the reason."
             );
         }
 

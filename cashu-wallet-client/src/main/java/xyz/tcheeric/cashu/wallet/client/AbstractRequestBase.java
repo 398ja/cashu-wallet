@@ -75,9 +75,14 @@ public abstract class AbstractRequestBase<T, U> {
     }
 
     public AbstractRequestBase(@NonNull String baseUrl, @NonNull String path, @NonNull String httpMethod, U requestObject, Class<T> responseType) {
-        MintUrlValidator.validate(baseUrl);
+        // Normalise, do not merely validate (audit M-17). validate() checked the URL and then
+        // the raw string was used for every request, so userinfo, a query string and a fragment
+        // all survived into the request URL: "https://user:pass@mint.example/?x=1" passed
+        // validation and was then concatenated with the path, producing a request to a different
+        // place than the one that was checked. validateAndNormalize strips all three and
+        // lowercases scheme and host, so what is stored is what was approved.
+        this.baseUrl = MintUrlValidator.validateAndNormalize(baseUrl);
         this.restTemplate = getSharedRestTemplate();  // Use shared instance (lazy initialized)
-        this.baseUrl = baseUrl;
         this.path = path;
         this.httpMethod = httpMethod;
         this.requestObject = requestObject;
