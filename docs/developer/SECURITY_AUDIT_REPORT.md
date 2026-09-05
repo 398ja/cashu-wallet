@@ -7,6 +7,17 @@
 **Reference Standard:** [Oracle Secure Coding Guidelines for Java SE](https://www.oracle.com/java/technologies/javase/seccodeguide.html)  
 **Status:** REVIEWED DRAFT (evidence-backed)
 
+> **Correction, 2026-09-05.** The ecosystem-wide security audit
+> (`imani-docs/security/cashu-security-compliance-audit-2026-09-05.md`) found **SW-04 marked
+> Implemented but only half done**. `clearSensitiveData()` was added to `DeriveSecretsResult` and
+> the recovery services do zero what they hold, which is what the remediation commit 51a65a8
+> covers. The mnemonic and the derived BIP32 master key, however, are still never cleared: their
+> lifetime remains unbounded, which is the finding's actual subject. Outstanding as of this note.
+>
+> Two further wallet items from that audit are not covered here at all: the raw, un-normalised
+> base URL is used for requests after `MintUrlValidator` has validated a normalised form (W-01),
+> and BIP39 library error text is logged and returned verbatim (W-03).
+
 ---
 
 ## Executive Summary
