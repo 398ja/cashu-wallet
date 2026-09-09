@@ -19,7 +19,11 @@ import java.math.BigInteger;
 @Nut(4)
 @Slf4j
 @AllArgsConstructor
-@ToString
+// r and secret are excluded (audit L-15). Together they are the two halves of a spendable proof:
+// r unblinds the signature and the secret is what the mint records as spent. A task object
+// reaches a log line easily, through a debug statement or an exception that prints its context,
+// and printing this one would publish a token.
+@ToString(exclude = {"r", "secret"})
 public class UnblindSignatureTask<T extends Secret> implements Task<Proof<T>> {
 
     private final BlindSignature blindSignature;

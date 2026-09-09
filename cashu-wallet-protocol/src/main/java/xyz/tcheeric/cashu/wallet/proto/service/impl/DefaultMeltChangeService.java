@@ -131,7 +131,14 @@ public final class DefaultMeltChangeService implements MeltChangeService {
         }
     }
 
-    private int totalAmount(List<Proof<DeterministicSecret>> proofs) {
-        return proofs.stream().mapToInt(Proof::getAmount).sum();
+    /**
+     * Sums proof amounts as a long.
+     *
+     * <p>These amounts come from the mint, and an int accumulator wraps (audit L-16). A wallet
+     * that trusts a mint about its own change is still better off not silently computing a
+     * negative total when the mint says something absurd.
+     */
+    private long totalAmount(List<Proof<DeterministicSecret>> proofs) {
+        return proofs.stream().mapToLong(Proof::getAmount).sum();
     }
 }

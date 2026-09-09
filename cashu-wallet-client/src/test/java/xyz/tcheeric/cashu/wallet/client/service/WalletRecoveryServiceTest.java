@@ -317,8 +317,11 @@ class WalletRecoveryServiceTest {
     }
 
     private byte[] createCompressedKey() {
-        byte[] bytes = new byte[33];
-        bytes[0] = 0x02;
-        return bytes;
+        // The generator G: a real point on secp256k1. This was 0x02 followed by 32 zero
+        // bytes, which has the right length and prefix but is not on the curve. cashu-lib
+        // 0.30.0 verifies the point at construction (audit L-4), so it is now rejected up
+        // front rather than failing later inside the crypto.
+        return org.bouncycastle.util.encoders.Hex.decode(
+                "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
     }
 }

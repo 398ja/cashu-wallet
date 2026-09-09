@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-09-06
+
+Security remediation from the 2026-09-05 audit. Minor rather than patch: the wallet now builds
+against three minor versions of `cashu-lib` it had never seen, and mint URL handling changed.
+
+### Security
+
+- **Mint URLs are normalised before use** (audit M-17). The raw base URL was used after
+  validation, so what was checked and what was called could differ.
+
+- **Mnemonic lifetime is bounded and BIP39 error text is no longer leaked** (audit M-18, M-19).
+  Error text echoed the failing input, which for a BIP39 phrase is the secret itself.
+
+### Changed
+
+- **`cashu-lib` 0.27.0 -> 0.30.0 and `cashu-voucher` 0.10.0 -> 0.14.0** (audit L-36). The wallet
+  was three minor versions behind on the library and four on the voucher, so none of their
+  security fixes had reached it.
+
 ## [0.7.0] - 2026-08-29
 
 ### Changed

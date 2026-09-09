@@ -126,9 +126,22 @@ public final class ProofRecoveryServiceImpl implements ProofRecoveryService {
 
         List<Proof<DeterministicSecret>> proofs = new ArrayList<>(blindSignatures.size());
 
+        // The mint returning a different number of signatures than we asked for means the
+        // response does not correspond to the request, and the positional matching below is then
+        // matching a signature to the wrong secret. The loop bound silently truncated that
+        // instead of noticing it (audit L-17): a mint returning one extra signature produced a
+        // recovery that looked successful and was quietly missing a proof.
+        if (blindSignatures.size() > secrets.size()) {
+            log.warn("proof_recovery signature_count_exceeds_request expected={} got={} action=reject",
+                secrets.size(), blindSignatures.size());
+            throw new IllegalStateException(
+                "Restore response contains more signatures (" + blindSignatures.size()
+                    + ") than blinded messages sent (" + secrets.size() + ")");
+        }
+
         // The restore response returns blind signatures in the same order as the blinded messages sent
         // We need to match each signature with its corresponding secret and blinding factor
-        for (int i = 0; i < blindSignatures.size() && i < secrets.size(); i++) {
+        for (int i = 0; i < blindSignatures.size(); i++) {
             BlindSignature blindSig = blindSignatures.get(i);
             DeterministicSecret secret = secrets.get(i);
             byte[] blindingFactor = blindingFactors.get(i);
