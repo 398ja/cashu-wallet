@@ -1,7 +1,12 @@
 name: Format
 
+# pull_request, not push. On a pull request the action formats only the files that PR changes and
+# pushes the result to the PR branch, which is reviewable. On a push to main it has no PR to read,
+# and `--replace` with `contents: write` means an unreviewed commit landing directly on the
+# default branch -- 80 files here, since nothing has enforced this style while the job was broken.
+# Matches cashu-mint and cashu-lib, where this workflow is triggered the same way.
 on:
-  push:
+  pull_request:
     branches:
       - main
       - master
@@ -15,6 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5 # v2 minimum required
+
+      # The action downloads the latest google-java-format, currently 1.36.1, which is compiled to
+      # class file major 65 -- Java 21. The runner's default JDK is 17, so the jar failed on
+      # `--version` before formatting anything and the job died with an opaque
+      # "Command ... failed with exit code 1". 21 is also what this project targets.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - uses: axel-op/googlejavaformat-action@v4
         with:
           args: "--replace"
