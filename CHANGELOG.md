@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-09-14
+
+### Security
+
+- **CI now scans a resolved SBOM, and runs secret scanning.** Part of closing P8 in the
+  2026-09-13 AppSec review.
+
+### Fixed
+
+- **The SBOM guard passed when it could not read the component count.**
+- **NUT-02 keyset ids in tests are allowlisted deliberately** — the spec is explicit that they
+  are public, and the alternative is a scanner nobody believes.
+
 ## [0.8.0] - 2026-09-06
 
 Security remediation from the 2026-09-05 audit. Minor rather than patch: the wallet now builds
