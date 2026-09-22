@@ -186,8 +186,14 @@ class WalletMeltServiceTest {
                 request.getOutputs() == null ? List.of() : request.getOutputs();
             blankOutputCount = blankOutputs.size();
 
-            PostMeltResponse response =
-                new PostMeltResponse(true, "preimage", imprintChange(blankOutputs));
+            // Built with the two-arg constructor plus a setter rather than the generated
+            // all-args one. NUT-23 added quoteId, request, amount, unit, method, feeReserve,
+            // state and expiry to this DTO, so @AllArgsConstructor's arity now tracks the
+            // spec and any future field silently breaks every caller that positions its
+            // arguments. The explicit (paid, preimage) constructor is part of the type's
+            // API; the generated one is an accident of field order.
+            PostMeltResponse response = new PostMeltResponse(true, "preimage");
+            response.setChange(imprintChange(blankOutputs));
             return (RequestMeltToken<T>) new StubMeltToken(mintUrl, paymentMethod, request, response);
         }
 

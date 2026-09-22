@@ -129,7 +129,14 @@ class DefaultMeltChangeServiceTest {
             change.add(signBlankOutput(
                 secrets.get(index), blindingFactors.get(index), changeAmounts.get(index)));
         }
-        return new PostMeltResponse(true, "preimage", change);
+        // Two-arg constructor plus a setter rather than the generated all-args one. NUT-23
+        // added eight fields to this DTO, so @AllArgsConstructor's arity now tracks the spec
+        // and any future addition breaks every positional caller. The explicit
+        // (paid, preimage) constructor is part of the type's API; the generated one is an
+        // accident of field order.
+        PostMeltResponse response = new PostMeltResponse(true, "preimage");
+        response.setChange(change);
+        return response;
     }
 
     private BlindSignature signBlankOutput(DeterministicSecret secret, byte[] blindingFactor, int amount) {

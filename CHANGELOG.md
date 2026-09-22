@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2026-09-22
+
+### Security
+
+- **BouncyCastle 1.84 -> 1.85 for CVE-2026-8763 (CRITICAL).** X.509 Name Constraints can be
+  bypassed with a trailing dot in an `rfc822Name` or URI, so a certificate can assert a name
+  the constraint exists to forbid.
+
+  This repository pins BouncyCastle locally rather than importing `imani-bom`, so the
+  estate-wide fix at the BOM did not reach it.
+
+### Fixed
+
+- **Two melt test fixtures called a constructor that no longer exists.** Moving to cashu-lib
+  0.30.5 surfaced `NoSuchMethodError: PostMeltResponse.<init>(boolean, String, List)` — NUT-23
+  added `quoteId`, `request`, `amount`, `unit`, `method`, `feeReserve`, `state` and `expiry`
+  to that DTO, so Lombok's `@AllArgsConstructor` arity now tracks the spec.
+
+  Both now use the explicit `(paid, preimage)` constructor and a setter. That distinction is
+  the point: the two-arg constructor is part of the type's API, while the generated one is an
+  accident of field order and breaks every positional caller each time the spec grows a field.
+
+  Worth noting where this was hiding: the repository was pinned to cashu-lib 0.30.0 and built
+  cleanly, so the incompatibility had been latent since NUT-23 landed and only appeared when
+  something forced the pin forward.
+
+### Changed
+
+- `cashu-lib` 0.30.0 -> 0.30.5, `cashu-voucher` 0.14.1 -> 0.14.4.
+
 ## [0.8.1] - 2026-09-14
 
 ### Security
