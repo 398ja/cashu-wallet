@@ -102,8 +102,9 @@ public abstract class AbstractRequestBase<T, U> {
     }
 
     private T executeGet(String url, String requestId) {
+        String target = loggableTarget(url);
         log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
-                HTTP_METHOD_GET, url, requestId);
+                HTTP_METHOD_GET, target, requestId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set(REQUEST_ID_HEADER, requestId);
@@ -114,7 +115,7 @@ public abstract class AbstractRequestBase<T, U> {
             ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.GET, entity, responseType);
             long duration = System.currentTimeMillis() - startTime;
             log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
-                    HTTP_METHOD_GET, url, requestId, duration);
+                    HTTP_METHOD_GET, target, requestId, duration);
             return response.getBody();
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
@@ -124,8 +125,9 @@ public abstract class AbstractRequestBase<T, U> {
     }
 
     private T executePost(String url, String requestId) {
+        String target = loggableTarget(url);
         log.debug("request_base dispatching_request method={} target={} request_id={} reason=execute_invoked",
-                HTTP_METHOD_POST, url, requestId);
+                HTTP_METHOD_POST, target, requestId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set(REQUEST_ID_HEADER, requestId);
@@ -137,7 +139,7 @@ public abstract class AbstractRequestBase<T, U> {
             ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
             long duration = System.currentTimeMillis() - startTime;
             log.info("request_base request_completed method={} target={} request_id={} result=success duration_ms={}",
-                    HTTP_METHOD_POST, url, requestId, duration);
+                    HTTP_METHOD_POST, target, requestId, duration);
             return response.getBody();
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
@@ -147,18 +149,29 @@ public abstract class AbstractRequestBase<T, U> {
     }
 
     /**
+     * The URL with any quote id replaced by its {@link QuoteRef}. A paid, unlocked mint quote id
+     * is a bearer claim under NUT-04, and quote status URLs carry it as their last segment.
+     */
+    private static String loggableTarget(String url) {
+        return QuoteRef.redact(url);
+    }
+
+    /**
      * Logs a failed request, including the mint's NUT-00 error body when it returned one.
      *
      * <p>Without the body the log carries only an HTTP status, which cannot distinguish a quote
-     * that is merely unpaid from one that has expired.
+     * that is merely unpaid from one that has expired. The error message and the mint's detail can
+     * echo the quote id in free text, so the id taken from the URL is redacted wherever it appears.
      */
     private void logFailure(String method, String url, String requestId, long duration, Exception failure) {
+        String quoteId = QuoteRef.idInUrl(url).orElse(null);
         String mintError = MintErrorReader.read(failure)
                 .map(MintErrorReader::describe)
                 .orElse("none");
 
         log.error("request_base request_failed method={} target={} request_id={} result=error "
                         + "duration_ms={} error={} mint_error={}",
-                method, url, requestId, duration, failure.getMessage(), mintError);
+                method, loggableTarget(url), requestId, duration,
+                QuoteRef.redact(failure.getMessage(), quoteId), QuoteRef.redact(mintError, quoteId));
     }
 }

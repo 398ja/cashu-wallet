@@ -1,11 +1,15 @@
 package xyz.tcheeric.cashu.wallet.client.service;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import xyz.tcheeric.bips.bip39.Bip39;
 import xyz.tcheeric.cashu.common.BlindSignature;
 import xyz.tcheeric.cashu.common.BlindedMessage;
@@ -22,6 +26,7 @@ import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltQuoteResponse;
 import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltRequest;
 import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltResponse;
 import xyz.tcheeric.cashu.common.Secret;
+import xyz.tcheeric.cashu.wallet.client.QuoteRef;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestMeltToken;
 import xyz.tcheeric.cashu.wallet.proto.builders.BlankOutputBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.impl.DefaultMeltChangeService;
@@ -42,6 +47,7 @@ class WalletMeltServiceTest {
     private static final String TEST_MNEMONIC = "abandon abandon abandon abandon abandon abandon "
         + "abandon abandon abandon abandon abandon about";
     private static final String TEST_MINT_URL = "https://mint.example.com";
+    private static final String MELT_QUOTE_ID = "mQ7tZr2Lw9Kc4Vb8Nx1P";
     private static final KeysetId KEYSET_ID = KeysetId.fromString("009a1f293253e41e");
     private static final List<Integer> KEYSET_AMOUNTS =
         List.of(1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024);
@@ -111,6 +117,38 @@ class WalletMeltServiceTest {
     }
 
     /**
+     * Ensures the melt log lines name the quote by its ref only, on both the change and the
+     * zero fee reserve paths, so a log reader never learns a quote id.
+     */
+    @Test
+    void shouldLogQuoteRefNotIdWhenMelting() {
+        // Arrange
+        Logger logger = (Logger) LoggerFactory.getLogger(WalletMeltServiceImpl.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        WalletMeltService service = new WalletMeltServiceImpl(
+            TEST_MINT_URL, new BlankOutputBuilder(), new DefaultMeltChangeService(), new StubMint(4));
+
+        // Act
+        try {
+            service.melt(quote(100, 8), inputs(108), masterKey, keySet, 0, PaymentMethod.BOLT11);
+            service.melt(quote(100, 0), inputs(100), masterKey, keySet, 0, PaymentMethod.BOLT11);
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        // Assert
+        List<String> quoteLines = appender.list.stream()
+            .map(ILoggingEvent::getFormattedMessage)
+            .filter(line -> line.contains("quote="))
+            .toList();
+        assertThat(quoteLines).hasSize(4).allSatisfy(line -> assertThat(line)
+            .doesNotContain(MELT_QUOTE_ID)
+            .contains("quote=" + QuoteRef.of(MELT_QUOTE_ID)));
+    }
+
+    /**
      * Ensures a zero fee reserve sends no blank outputs, as NUT-08 prescribes, and leaves
      * the derivation counter untouched.
      */
@@ -129,7 +167,7 @@ class WalletMeltServiceTest {
     }
 
     private PostMeltQuoteResponse quote(int amount, int feeReserve) {
-        return new PostMeltQuoteResponse("quote-id", amount, feeReserve, false, 0);
+        return new PostMeltQuoteResponse(MELT_QUOTE_ID, amount, feeReserve, false, 0);
     }
 
     private List<Proof<DeterministicSecret>> inputs(int amount) {

@@ -15,6 +15,7 @@ import xyz.tcheeric.cashu.entities.annotation.Nut;
 import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltQuoteResponse;
 import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltRequest;
 import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltResponse;
+import xyz.tcheeric.cashu.wallet.client.QuoteRef;
 import xyz.tcheeric.cashu.wallet.client.impl.RequestMeltToken;
 import xyz.tcheeric.cashu.wallet.proto.builders.BlankOutputBuilder;
 import xyz.tcheeric.cashu.wallet.proto.service.MeltChangeService;
@@ -73,7 +74,7 @@ public class WalletMeltServiceImpl implements WalletMeltService {
 
         int blankOutputCount = blankOutputBuilder.calculateBlankOutputCount(quote.getFeeReserve());
         log.info("wallet_melt started quote={} fee_reserve={} blank_outputs={}",
-            quote.getQuoteId(), quote.getFeeReserve(), blankOutputCount);
+            QuoteRef.of(quote.getQuoteId()), quote.getFeeReserve(), blankOutputCount);
 
         if (blankOutputCount == 0) {
             return meltWithoutChange(quote, inputs, paymentMethod, startCounter);
@@ -100,7 +101,7 @@ public class WalletMeltServiceImpl implements WalletMeltService {
                 .build();
 
             log.info("wallet_melt completed quote={} paid={} change_proofs={} change_amount={}",
-                quote.getQuoteId(), result.isPaid(), changeProofs.size(), result.getChangeAmount());
+                QuoteRef.of(quote.getQuoteId()), result.isPaid(), changeProofs.size(), result.getChangeAmount());
 
             return result;
 
@@ -119,7 +120,7 @@ public class WalletMeltServiceImpl implements WalletMeltService {
             new PostMeltRequest<>(quote.getQuoteId(), inputs), paymentMethod);
 
         log.info("wallet_melt completed quote={} paid={} change_proofs=0 reason=zero_fee_reserve",
-            quote.getQuoteId(), response.isPaid());
+            QuoteRef.of(quote.getQuoteId()), response.isPaid());
 
         return MeltResult.builder()
             .paid(response.isPaid())
