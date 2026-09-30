@@ -33,13 +33,19 @@ public final class QuoteRef {
     private static final String NOT_A_REF = "(?!" + EXISTING_REF + ")(?!" + EXISTING_PLACEHOLDER + ")";
 
     /**
+     * The id segment of a quote URL such as {@code /mint/quote/voucher/bolt11/<id>},
+     * {@code /mint/quote/bolt11/<id>} or {@code /melt/quote/bolt11/<id>}. The method segment may be
+     * any case and may contain hyphens, since mints differ in how they spell it.
+     */
+    private static final Pattern QUOTE_URL_SHAPE = Pattern.compile(
+            "(/quote/(?:voucher/)?(?!voucher/)[A-Za-z0-9_-]+/)" + NOT_A_REF + "([^\\s\"'/?#,;)]+)",
+            Pattern.CASE_INSENSITIVE);
+
+    /**
      * The shapes a quote id takes in text this client writes or passes on: a {@code quoteId=} or
      * {@code quote_id=} field, a JSON {@code "quote":"..."} member from a request or error body,
-     * and the id segment of a quote URL such as {@code /mint/quote/voucher/bolt11/<id>},
-     * {@code /mint/quote/bolt11/<id>} or {@code /melt/quote/bolt11/<id>}.
+     * and a quote URL.
      */
-    private static final Pattern QUOTE_URL_SHAPE =
-            Pattern.compile("(/quote/(?:voucher/)?(?!voucher/)[a-z0-9_]+/)" + NOT_A_REF + "([^\\s\"'/?#,;)]+)");
     private static final List<Pattern> QUOTE_ID_SHAPES = List.of(
             Pattern.compile("(quote_?[iI]d=)" + NOT_A_REF + "([^,;.\\s)\"'}]+)"),
             Pattern.compile("(\"quote(?:_?[iI]d)?\"\\s*:\\s*\")" + NOT_A_REF + "([^\"]+)"),

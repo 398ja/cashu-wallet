@@ -8,10 +8,18 @@ import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltRequest;
 import xyz.tcheeric.cashu.entities.rest.nut05.PostMeltResponse;
 import xyz.tcheeric.cashu.wallet.client.AbstractRequestBase;
 
+import java.util.Optional;
+
 @Nut(5)
 public class RequestMeltToken<T extends Secret> extends AbstractRequestBase<PostMeltResponse, PostMeltRequest<T>> {
 
     public RequestMeltToken(@NonNull String baseUrl, @NonNull PaymentMethod paymentMethod, @NonNull PostMeltRequest<T> postMeltRequest) {
         super(baseUrl, "/melt/" + paymentMethod.name().toLowerCase(), HTTP_METHOD_POST, postMeltRequest, PostMeltResponse.class);
+    }
+
+    /** The quote being melted travels in the body, not the path. */
+    @Override
+    protected Optional<String> quoteId() {
+        return Optional.ofNullable(getRequestObject().getQuoteId());
     }
 }

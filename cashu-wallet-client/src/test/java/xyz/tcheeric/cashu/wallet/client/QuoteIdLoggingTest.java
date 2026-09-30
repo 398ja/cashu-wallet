@@ -12,6 +12,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpClientErrorException;
+import xyz.tcheeric.cashu.common.Secret;
+import xyz.tcheeric.cashu.common.nut18.PaymentMethod;
+import xyz.tcheeric.cashu.entities.rest.nut04.PostMintRequest;
+import xyz.tcheeric.cashu.wallet.client.impl.RequestMintToken;
 
 import java.util.List;
 
@@ -37,7 +41,11 @@ class QuoteIdLoggingTest {
 
     private static class StatusRequest extends AbstractRequestBase<String, Void> {
         StatusRequest() {
-            super(BASE_URL, STATUS_PATH, String.class);
+            this(STATUS_PATH);
+        }
+
+        StatusRequest(String path) {
+            super(BASE_URL, path, String.class);
         }
     }
 
@@ -67,7 +75,7 @@ class QuoteIdLoggingTest {
         request.execute();
 
         // Assert
-        List<String> lines = loggedLines();
+        List<String> lines = loggedLines().stream().filter(line -> line.contains("target=")).toList();
         assertThat(lines).hasSize(2).allSatisfy(line -> assertThat(line)
                 .doesNotContain(QUOTE_ID)
                 .contains(QuoteRef.of(QUOTE_ID)));
@@ -98,5 +106,49 @@ class QuoteIdLoggingTest {
 
     private List<String> loggedLines() {
         return appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
+    }
+
+    /**
+     * A failed POST /mint carries the quote id only in its body. When the mint's NUT-00 detail
+     * echoes it, the error line must still show only the ref.
+     */
+    @Test
+    void shouldRedactBodyQuoteIdWhenMintPostFails() {
+        // Arrange
+        PostMintRequest<Secret> body = new PostMintRequest<>();
+        body.setQuoteId(QUOTE_ID);
+        RequestMintToken<Secret> request = new RequestMintToken<>(BASE_URL, PaymentMethod.BOLT11, body);
+        MockRestServiceServer server = MockRestServiceServer.createServer(request.getRestTemplate());
+        server.expect(requestTo(BASE_URL + "/mint/bolt11")).andRespond(withStatus(HttpStatus.BAD_REQUEST)
+                .body(mintErrorEchoing(QUOTE_ID)).contentType(MediaType.APPLICATION_JSON));
+
+        // Act
+        assertThatThrownBy(request::execute).isInstanceOf(HttpClientErrorException.class);
+
+        // Assert
+        List<String> lines = loggedLines();
+        assertThat(lines).isNotEmpty().allSatisfy(line -> assertThat(line).doesNotContain(QUOTE_ID));
+        assertThat(lines.get(lines.size() - 1)).contains("code=20001").contains(QuoteRef.of(QUOTE_ID));
+    }
+
+    /** A status URL whose method segment is uppercase or hyphenated still logs only the ref. */
+    @Test
+    void shouldRedactIdWhenMethodSegmentIsUppercaseOrHyphenated() {
+        // Arrange
+        StatusRequest request = new StatusRequest("/v1/mint/quote/BOLT-12/" + QUOTE_ID);
+        MockRestServiceServer server = MockRestServiceServer.createServer(request.getRestTemplate());
+        server.expect(requestTo(BASE_URL + "/v1/mint/quote/BOLT-12/" + QUOTE_ID)).andRespond(
+                withStatus(HttpStatus.BAD_REQUEST).body(mintErrorEchoing(QUOTE_ID)).contentType(MediaType.APPLICATION_JSON));
+
+        // Act
+        assertThatThrownBy(request::execute).isInstanceOf(HttpClientErrorException.class);
+
+        // Assert
+        assertThat(loggedLines()).anyMatch(line -> line.contains("request_failed"))
+                .allSatisfy(line -> assertThat(line).doesNotContain(QUOTE_ID));
+    }
+
+    private static String mintErrorEchoing(String quoteId) {
+        return "{\"detail\":\"quote " + quoteId + " is not paid\",\"code\":20001}";
     }
 }

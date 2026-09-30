@@ -13,6 +13,11 @@ All notable changes to this project will be documented in this file.
   log `QuoteRef`: `q:` and the first 6 bytes of SHA-256 of the id in hex, the same ref
   imani-wallet-lib logs, so one quote can still be followed across both. The NUT-00 error code is
   kept. Exceptions thrown to callers are unchanged.
+- **Quote ids in request bodies are redacted from failure logs too.** `POST /mint` and `POST /melt`
+  carry the id in the body, so a mint error echoing it was logged raw. Request classes now expose
+  the id through an overridable `quoteId()`, and quote URLs with an uppercase or hyphenated method
+  segment are matched. The logging how-to warns that Spring's DEBUG HTTP logging prints full URLs
+  and bodies and must stay off in production.
 
 ## [0.8.2] - 2026-09-22
 

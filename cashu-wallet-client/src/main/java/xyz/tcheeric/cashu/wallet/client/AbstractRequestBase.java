@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import xyz.tcheeric.cashu.wallet.proto.util.MintUrlValidator;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 
 @Getter
@@ -149,11 +150,20 @@ public abstract class AbstractRequestBase<T, U> {
     }
 
     /**
+     * The quote id this request is about, so the failure log can redact it wherever the mint echoes
+     * it. Defaults to the id in a quote status path. Requests that carry the id in their body
+     * override this.
+     */
+    protected Optional<String> quoteId() {
+        return QuoteRef.idInUrl(path);
+    }
+
+    /**
      * The URL with any quote id replaced by its {@link QuoteRef}. A paid, unlocked mint quote id
      * is a bearer claim under NUT-04, and quote status URLs carry it as their last segment.
      */
-    private static String loggableTarget(String url) {
-        return QuoteRef.redact(url);
+    private String loggableTarget(String url) {
+        return QuoteRef.redact(url, quoteId().orElse(null));
     }
 
     /**
@@ -161,10 +171,11 @@ public abstract class AbstractRequestBase<T, U> {
      *
      * <p>Without the body the log carries only an HTTP status, which cannot distinguish a quote
      * that is merely unpaid from one that has expired. The error message and the mint's detail can
-     * echo the quote id in free text, so the id taken from the URL is redacted wherever it appears.
+     * echo the quote id in free text, so this request's {@link #quoteId()} is redacted wherever it
+     * appears.
      */
     private void logFailure(String method, String url, String requestId, long duration, Exception failure) {
-        String quoteId = QuoteRef.idInUrl(url).orElse(null);
+        String quoteId = quoteId().orElse(null);
         String mintError = MintErrorReader.read(failure)
                 .map(MintErrorReader::describe)
                 .orElse("none");
