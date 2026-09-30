@@ -35,3 +35,8 @@ final class WalletRecoveryServiceImpl implements WalletRecoveryService {
 ## Verify
 - Run `mvn -q verify` to ensure the changes compile and all tests still pass.
 - Manually review the log output (for example via unit tests or local runs) to confirm sensitive information is not present.
+
+## Quote Ids Are Bearer Claims
+- Under NUT-04 anyone who learns the id of a paid, unlocked mint quote can mint it. Never log a raw quote id. Log `QuoteRef.of(id)` instead, which gives `q:` and 12 hex characters that still tie log lines together.
+- A request class that carries a quote id in its body, not its path, overrides `AbstractRequestBase.quoteId()` so failure logs redact it wherever the mint echoes it.
+- Keep Spring's own HTTP client logging off in production. At DEBUG, loggers such as `org.springframework.web.client.RestTemplate` and `org.springframework.web.client` print full request URLs and bodies, quote ids included, and no redaction here can reach them.

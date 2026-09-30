@@ -49,7 +49,8 @@ final class MintErrorReader {
         try {
             return Optional.ofNullable(ErrorResponse.fromJson(body));
         } catch (RuntimeException e) {
-            log.debug("mint_error body_not_nut00 reason={}", e.getMessage());
+            // The parser quotes the body it failed on, and a body can carry a quote id.
+            log.debug("mint_error body_not_nut00 reason={}", QuoteRef.redact(e.getMessage()));
             return Optional.empty();
         }
     }
