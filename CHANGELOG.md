@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-09-30
+
 ### Security
 
 - **Quote ids no longer reach the request logs (imani-wallet-lib#107).** Under NUT-04 anyone who
