@@ -70,7 +70,7 @@
         <junit-jupiter.version>5.12.2</junit-jupiter.version>
         <junit-platform.version>1.13.4</junit-platform.version>
         <mockito.version>5.19.0</mockito.version>
-        <assertj.version>3.27.4</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
         <lombok.version>1.18.40</lombok.version>
     </properties>
 
